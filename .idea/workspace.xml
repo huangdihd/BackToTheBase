@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Add initial project structure and configuration files&#10;&#10;- Create `pom.xml` with Maven configuration&#10;- Add `.idea` configuration files for IntelliJ IDEA&#10;- Implement `BackToTheBase` plugin and related classes&#10;- Configure `.gitignore` for the project">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Update project version to 1.0-RELEASE">
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -115,7 +114,7 @@
       <option name="presentableId" value="Default" />
       <updated>1766940817366</updated>
       <workItem from="1766940818924" duration="11062000" />
-      <workItem from="1767199440294" duration="2416000" />
+      <workItem from="1767199440294" duration="2683000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial project setup and basic plugin structure">
       <option name="closed" value="true" />
@@ -133,7 +132,23 @@
       <option name="project" value="LOCAL" />
       <updated>1767201346617</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Update README with usage instructions and improve project configuration&#10;&#10;- Add detailed usage instructions to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings">
+      <option name="closed" value="true" />
+      <created>1767201920339</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1767201920339</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Update project version to 1.0-RELEASE">
+      <option name="closed" value="true" />
+      <created>1767201971402</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1767201971402</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -142,6 +157,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Add initial project setup and basic plugin structure" />
     <MESSAGE value="Add initial project structure and configuration files&#10;&#10;- Create `pom.xml` with Maven configuration&#10;- Add `.idea` configuration files for IntelliJ IDEA&#10;- Implement `BackToTheBase` plugin and related classes&#10;- Configure `.gitignore` for the project" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add initial project structure and configuration files&#10;&#10;- Create `pom.xml` with Maven configuration&#10;- Add `.idea` configuration files for IntelliJ IDEA&#10;- Implement `BackToTheBase` plugin and related classes&#10;- Configure `.gitignore` for the project" />
+    <MESSAGE value="Update README with usage instructions and improve project configuration&#10;&#10;- Add detailed usage instructions to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
+    <MESSAGE value="Update project version to 1.0-RELEASE" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update project version to 1.0-RELEASE" />
   </component>
 </project>

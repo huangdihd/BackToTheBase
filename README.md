@@ -1,11 +1,12 @@
 # BackToTheBase
 A xinbot plugin to trigger ender pearls
 ## How to use
-1. Download the plugin from the releases page
-2. Put the jar in your plugins folder
-3. Place a button which can trigger the ender pearl at a place that the bot can trigger
-4. Reload your xinbot instance
-5. Modify `base_config.json` formated like the example:
+1. Install [MovementSync](https://github.com/huangdihd/movementsync)
+2. Download the plugin from the releases page
+3. Put the jar in your plugins folder
+4. Place a button which can trigger the ender pearl at a place that the bot can trigger
+5. Reload your xinbot instance
+6. Modify `base_config.json` formated like the example:
 
 ```json
 {
