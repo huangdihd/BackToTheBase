@@ -2,8 +2,6 @@ package huangdihd.xinbot;
 
 import org.cloudburstmc.math.vector.Vector3i;
 import org.joml.Vector3d;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.event.EventHandler;
@@ -12,7 +10,6 @@ import xin.bbtt.mcbot.events.PrivateChatEvent;
 import xin.bbtt.movements.LookAtMovement;
 
 public class OnPrivateChat implements Listener {
-    private static final Logger log = LoggerFactory.getLogger(OnPrivateChat.class.getSimpleName());
 
     @EventHandler
     public void onBack(PrivateChatEvent event) {
