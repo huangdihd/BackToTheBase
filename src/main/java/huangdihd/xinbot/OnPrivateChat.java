@@ -25,6 +25,6 @@ public class OnPrivateChat implements Listener {
         if (!(Bot.Instance.getPluginManager().getPlugin("MovementSync") instanceof MovementSync movementSync)) return;
         movementSync.getMovementController().addMovement(new LookAtMovement(positionDouble));
         movementSync.movementController.addMovement(new UseItemOnMovement(positionInt, button.direction));
-        log.info("Added movements");
+        Bot.Instance.sendChatMessage("已经触发" + event.getSender().getName() + "的滞留珍珠 by BackToTheBase");
     }
 }

@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Update project version to 1.0-RELEASE">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-    </list>
+    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Update README with MovementSync installation step and improve project configuration&#10;&#10;- Add MovementSync installation to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -114,7 +112,7 @@
       <option name="presentableId" value="Default" />
       <updated>1766940817366</updated>
       <workItem from="1766940818924" duration="11062000" />
-      <workItem from="1767199440294" duration="2683000" />
+      <workItem from="1767199440294" duration="3373000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial project setup and basic plugin structure">
       <option name="closed" value="true" />
@@ -148,7 +146,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767201971402</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Update README with MovementSync installation step and improve project configuration&#10;&#10;- Add MovementSync installation to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings">
+      <option name="closed" value="true" />
+      <created>1767202159331</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1767202159331</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -159,6 +165,7 @@
     <MESSAGE value="Add initial project structure and configuration files&#10;&#10;- Create `pom.xml` with Maven configuration&#10;- Add `.idea` configuration files for IntelliJ IDEA&#10;- Implement `BackToTheBase` plugin and related classes&#10;- Configure `.gitignore` for the project" />
     <MESSAGE value="Update README with usage instructions and improve project configuration&#10;&#10;- Add detailed usage instructions to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
     <MESSAGE value="Update project version to 1.0-RELEASE" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update project version to 1.0-RELEASE" />
+    <MESSAGE value="Update README with MovementSync installation step and improve project configuration&#10;&#10;- Add MovementSync installation to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update README with MovementSync installation step and improve project configuration&#10;&#10;- Add MovementSync installation to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
   </component>
 </project>
