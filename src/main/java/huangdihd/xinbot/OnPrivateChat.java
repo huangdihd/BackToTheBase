@@ -14,7 +14,7 @@ public class OnPrivateChat implements Listener {
     @EventHandler
     public void onBack(PrivateChatEvent event) {
         if (!BackToTheBase.getInstance().buttons.containsKey(event.getSender().getName())) return;
-        if (!event.getMessage().equals("back ")) return;
+        if (!event.getMessage().startsWith("back")) return;
         Button button = BackToTheBase.getInstance().buttons.get(event.getSender().getName());
         Vector3d positionDouble = new Vector3d(button.x, button.y, button.z).add(new Vector3d(.5, .5, .5));
         Vector3i positionInt = Vector3i.from(button.x, button.y, button.z);

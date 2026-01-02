@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Update README with MovementSync installation step and improve project configuration&#10;&#10;- Add MovementSync installation to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
+    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Remove unused logging imports and Logger field in OnPrivateChat">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -32,6 +34,9 @@
     &quot;accountId&quot;: &quot;9c78076b-cf03-441f-b689-e51f325c5334&quot;
   }
 }</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1
 }</component>
@@ -112,7 +117,7 @@
       <option name="presentableId" value="Default" />
       <updated>1766940817366</updated>
       <workItem from="1766940818924" duration="11062000" />
-      <workItem from="1767199440294" duration="3373000" />
+      <workItem from="1767199440294" duration="5495000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial project setup and basic plugin structure">
       <option name="closed" value="true" />
@@ -154,7 +159,23 @@
       <option name="project" value="LOCAL" />
       <updated>1767202159331</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Update OnPrivateChat to send chat message and improve project configuration&#10;&#10;- Replace log info with chat message in OnPrivateChat&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings">
+      <option name="closed" value="true" />
+      <created>1767238335796</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1767238335796</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Remove unused logging imports and Logger field in OnPrivateChat">
+      <option name="closed" value="true" />
+      <created>1767238371343</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1767238371343</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -166,6 +187,9 @@
     <MESSAGE value="Update README with usage instructions and improve project configuration&#10;&#10;- Add detailed usage instructions to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
     <MESSAGE value="Update project version to 1.0-RELEASE" />
     <MESSAGE value="Update README with MovementSync installation step and improve project configuration&#10;&#10;- Add MovementSync installation to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update README with MovementSync installation step and improve project configuration&#10;&#10;- Add MovementSync installation to README.md&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
+    <MESSAGE value="Update OnPrivateChat to send chat message and improve project configuration&#10;&#10;- Replace log info with chat message in OnPrivateChat&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
+    <MESSAGE value="Remove unused logger import in OnPrivateChat" />
+    <MESSAGE value="Remove unused logging imports and Logger field in OnPrivateChat" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove unused logging imports and Logger field in OnPrivateChat" />
   </component>
 </project>
