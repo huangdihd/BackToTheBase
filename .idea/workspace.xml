@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Remove unused logging imports and Logger field in OnPrivateChat">
+    <list default="true" id="e905daf1-2077-4565-b09e-816588da6d8f" name="Changes" comment="Update OnPrivateChat to handle &quot;back&quot; command variations and update workspace configuration&#10;&#10;- Modify `OnPrivateChat` to check for messages starting with &quot;back&quot;&#10;- Update .idea/workspace.xml with recent changes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,6 +35,9 @@
     &quot;accountId&quot;: &quot;9c78076b-cf03-441f-b689-e51f325c5334&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="jar://$USER_HOME$/Library/Java/JavaVirtualMachines/corretto-17.0.17/Contents/Home/lib/src.zip!/java.base/java/lang/Class.java" root0="SKIP_INSPECTION" />
+  </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -45,24 +49,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Maven.BackToTheBase [clean,package].executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;onboarding.tips.debug.path&quot;: &quot;/Users/h2028176/IdeaProjects/BackToTheBase/src/main/java/huangdihd/xinbot/Main.java&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven.BackToTheBase [clean,package].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "onboarding.tips.debug.path": "/Users/h2028176/IdeaProjects/BackToTheBase/src/main/java/huangdihd/xinbot/Main.java",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -118,6 +123,7 @@
       <updated>1766940817366</updated>
       <workItem from="1766940818924" duration="11062000" />
       <workItem from="1767199440294" duration="5495000" />
+      <workItem from="1767382734443" duration="2176000" />
     </task>
     <task id="LOCAL-00001" summary="Add initial project setup and basic plugin structure">
       <option name="closed" value="true" />
@@ -175,7 +181,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767238371343</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Update OnPrivateChat to handle &quot;back&quot; command variations and update workspace configuration&#10;&#10;- Modify `OnPrivateChat` to check for messages starting with &quot;back&quot;&#10;- Update .idea/workspace.xml with recent changes">
+      <option name="closed" value="true" />
+      <created>1767382776938</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1767382776938</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -190,6 +204,7 @@
     <MESSAGE value="Update OnPrivateChat to send chat message and improve project configuration&#10;&#10;- Replace log info with chat message in OnPrivateChat&#10;- Update .idea/workspace.xml with recent changes&#10;- Enhance GitHub and IntelliJ IDEA settings" />
     <MESSAGE value="Remove unused logger import in OnPrivateChat" />
     <MESSAGE value="Remove unused logging imports and Logger field in OnPrivateChat" />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove unused logging imports and Logger field in OnPrivateChat" />
+    <MESSAGE value="Update OnPrivateChat to handle &quot;back&quot; command variations and update workspace configuration&#10;&#10;- Modify `OnPrivateChat` to check for messages starting with &quot;back&quot;&#10;- Update .idea/workspace.xml with recent changes" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update OnPrivateChat to handle &quot;back&quot; command variations and update workspace configuration&#10;&#10;- Modify `OnPrivateChat` to check for messages starting with &quot;back&quot;&#10;- Update .idea/workspace.xml with recent changes" />
   </component>
 </project>
