@@ -1030,9 +1030,6 @@ public class BackToTheBase implements Plugin {
     private class BackToTheBaseCommand extends TabExecutor {
         @Override
         public void onCommand(Command command, String label, String[] args) {
-            if (!isPlainCommandLabel(label)) {
-                return;
-            }
             if (args == null) {
                 args = new String[0];
             }
@@ -1049,9 +1046,6 @@ public class BackToTheBase implements Plugin {
 
         @Override
         public List<String> onTabComplete(Command command, String label, String[] args) {
-            if (!isPlainCommandLabel(label)) {
-                return List.of();
-            }
             if (args == null || args.length == 0) {
                 return rootSuggestions("");
             }
@@ -1067,11 +1061,6 @@ public class BackToTheBase implements Plugin {
                 case "admin" -> completeAdmin(args);
                 default -> List.of();
             };
-        }
-
-        private boolean isPlainCommandLabel(String label) {
-            return "backtothebase".equalsIgnoreCase(label)
-                    || "BackToTheBase:backtothebase".equalsIgnoreCase(label);
         }
 
         private List<String> rootSuggestions(String prefix) {

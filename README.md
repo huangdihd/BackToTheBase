@@ -38,7 +38,7 @@ Example:
 
 ## Console Commands
 
-Use the command name `backtothebase`. Note that BackToTheBase:backtothebase is not available.
+Use the command name `backtothebase`. The prefixed form `BackToTheBase:backtothebase` also works.
 
 | Command | Description |
 | --- | --- |

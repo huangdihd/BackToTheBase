@@ -38,7 +38,7 @@
 
 ## 控制台命令
 
-命令名为 `backtothebase`，注意BackToTheBase:backtothebase 不可用。
+命令名为 `backtothebase`，也可以使用带前缀的 `BackToTheBase:backtothebase`。
 
 | 所有命令 | 说明 |
 | --- | --- |
