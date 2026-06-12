@@ -62,10 +62,12 @@ public class OnPrivateChat implements Listener {
 
         if (!Bot.INSTANCE.getPluginManager().isPluginEnabled("MovementSync")) {
             BackToTheBase.INSTANCE.getLogger().warn("[BackToTheBase] MovementSync 未启用，无法执行 back 命令。");
+            sendPrivate(senderName, "[BackToTheBase] MovementSync 未启用，无法执行 back 命令。");
             return;
         }
         if (!(Bot.INSTANCE.getPluginManager().getPlugin("MovementSync").getPlugin() instanceof MovementSync movementSync)) {
             BackToTheBase.INSTANCE.getLogger().error("[BackToTheBase] MovementSync 插件实例异常，无法执行 back 命令。");
+            sendPrivate(senderName, "[BackToTheBase] MovementSync 插件实例异常，无法执行 back 命令。");
             return;
         }
         if (!acquireBackAction(senderName)) {

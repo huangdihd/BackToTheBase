@@ -394,7 +394,8 @@ public class BackToTheBase implements Plugin {
             changed = true;
         } else {
             for (JsonElement element : adminObj.getAsJsonArray("players")) {
-                if (!element.isJsonPrimitive()) {
+                if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+                    getLogger().warn("admin.players entries must be strings. Ignoring {}.", element);
                     changed = true;
                     continue;
                 }
@@ -734,7 +735,7 @@ public class BackToTheBase implements Plugin {
             if (config.getLocation(args[3]) == null) {
                 return List.of("[BackToTheBase] 珍珠坐标 " + args[3] + " 不存在。");
             }
-            if (config.getLocations() == null || config.getLocations().size() <= 1) {
+            if (safeLocations(config).size() <= 1) {
                 return List.of("[BackToTheBase] 不能删除 " + args[2] + " 的最后一个珍珠坐标，请使用 player remove。");
             }
             pendingActions.put(scope, PendingAction.removeLoc(args[2], args[3]));
@@ -850,6 +851,9 @@ public class BackToTheBase implements Plugin {
         }
         if (config.getLocation(action.number) == null) {
             return List.of("[BackToTheBase] 珍珠坐标 " + action.number + " 不存在。");
+        }
+        if (safeLocations(config).size() <= 1) {
+            return List.of("[BackToTheBase] 不能删除 " + action.playerName + " 的最后一个珍珠坐标，请使用 player remove。");
         }
 
         config.getLocations().removeIf(location -> location != null && action.number.equals(location.getNumber()));
