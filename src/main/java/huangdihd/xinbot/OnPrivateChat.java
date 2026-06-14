@@ -36,7 +36,8 @@ public class OnPrivateChat implements Listener {
         String[] args = message.trim().split("\\s+");
 
         String senderName = event.getSender().getName();
-        if ("@backtothebase".equalsIgnoreCase(args[0])) {
+        if (BackToTheBase.GAME_COMMAND_PREFIX.equalsIgnoreCase(args[0])
+                || BackToTheBase.GAME_COMMAND_ALIAS_PREFIX.equalsIgnoreCase(args[0])) {
             handleAdminCommand(senderName, args);
             return;
         }
@@ -49,35 +50,35 @@ public class OnPrivateChat implements Listener {
 
         PlayerBaseConfig config = BackToTheBase.INSTANCE.getPlayerConfigs().get(senderName);
         if (config == null) {
-            BackToTheBase.INSTANCE.getLogger().warn("[BackToTheBase] 已忽略 {} 的 back 命令，因为该玩家不在玩家列表中。", senderName);
+            BackToTheBase.INSTANCE.getLogger().warn("Ignoring back command from {} because the player is not configured.", senderName);
             return;
         }
 
         ButtonLocation location = config.getLocation(number);
         if (location == null) {
             BackToTheBase.INSTANCE.getLogger().warn("No pearl button location number {} configured for {}.", number, senderName);
-            sendPrivate(senderName, "[BackToTheBase] 珍珠坐标 " + number + " 未配置。");
+            sendPrivate(senderName, messages().locationNotConfigured(number));
             return;
         }
 
         if (!Bot.INSTANCE.getPluginManager().isPluginEnabled("MovementSync")) {
-            BackToTheBase.INSTANCE.getLogger().warn("[BackToTheBase] MovementSync 未启用，无法执行 back 命令。");
-            sendPrivate(senderName, "[BackToTheBase] MovementSync 未启用，无法执行 back 命令。");
+            BackToTheBase.INSTANCE.getLogger().warn("MovementSync is not enabled. Cannot run back command.");
+            sendPrivate(senderName, messages().movementSyncDisabled());
             return;
         }
         if (!(Bot.INSTANCE.getPluginManager().getPlugin("MovementSync").getPlugin() instanceof MovementSync movementSync)) {
-            BackToTheBase.INSTANCE.getLogger().error("[BackToTheBase] MovementSync 插件实例异常，无法执行 back 命令。");
-            sendPrivate(senderName, "[BackToTheBase] MovementSync 插件实例异常，无法执行 back 命令。");
+            BackToTheBase.INSTANCE.getLogger().error("MovementSync plugin instance is invalid. Cannot run back command.");
+            sendPrivate(senderName, messages().movementSyncInvalid());
             return;
         }
         if (!acquireBackAction(senderName)) {
             BackToTheBase.INSTANCE.getLogger().warn("Ignoring back command from {} because a BackToTheBase action is already running.", senderName);
-            sendPrivate(senderName, "[BackToTheBase] 已有拉珍珠任务正在运行。");
+            sendPrivate(senderName, messages().actionAlreadyRunning());
             return;
         }
 
         BackToTheBase.INSTANCE.getLogger().info("BackToTheBase command from {} selected location number {}.", senderName, number);
-        sendPrivate(senderName, "[BackToTheBase] 正在拉动珍珠坐标 " + number + "。");
+        sendPrivate(senderName, messages().backStarted(number));
         if (!queueButtonAction(movementSync, senderName, location, BackToTheBase.INSTANCE.getBaseConfig().getReturnConfig())) {
             releaseBackAction();
         }
@@ -88,18 +89,28 @@ public class OnPrivateChat implements Listener {
 
         PlayerBaseConfig.AdminConfig admin = BackToTheBase.INSTANCE.getBaseConfig().getAdmin();
         if (!admin.isEnabled()) {
-            BackToTheBase.INSTANCE.getLogger().warn("[BackToTheBase] 已忽略 {} 的游戏内管理命令，因为游戏内管理已关闭。", senderName);
+            BackToTheBase.INSTANCE.getLogger().warn("Ignoring in-game admin command from {} because in-game admin commands are disabled.", senderName);
             return;
         }
         if (admin.getPlayers() == null || !admin.getPlayers().contains(senderName)) {
-            BackToTheBase.INSTANCE.getLogger().warn("[BackToTheBase] 已忽略 {} 的游戏内管理命令，因为该玩家不是管理员。", senderName);
+            BackToTheBase.INSTANCE.getLogger().warn("Ignoring in-game admin command from {} because the sender is not an admin.", senderName);
             return;
         }
         String[] commandArgs = new String[args.length - 1];
         System.arraycopy(args, 1, commandArgs, 0, commandArgs.length);
-        for (String line : BackToTheBase.INSTANCE.handleManagementCommand(senderName, false, commandArgs)) {
+        for (String line : BackToTheBase.INSTANCE.handleManagementCommand(senderName, false, normalizeAdminPrefix(args[0]), commandArgs)) {
             sendPrivate(senderName, line);
         }
+    }
+
+    private BackToTheBaseLanguage messages() {
+        return BackToTheBaseLanguage.of(BackToTheBase.INSTANCE.getBaseConfig().getLanguage());
+    }
+
+    private String normalizeAdminPrefix(String prefix) {
+        return BackToTheBase.GAME_COMMAND_ALIAS_PREFIX.equalsIgnoreCase(prefix)
+                ? BackToTheBase.GAME_COMMAND_ALIAS_PREFIX
+                : BackToTheBase.GAME_COMMAND_PREFIX;
     }
 
     private void sendPrivate(String playerName, String message) {

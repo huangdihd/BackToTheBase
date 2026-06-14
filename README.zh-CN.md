@@ -38,7 +38,7 @@
 
 ## 控制台命令
 
-命令名为 `backtothebase`，也可以使用带前缀的 `BackToTheBase:backtothebase`。
+命令名可以使用 `backtothebase` 或简短版 `bttb`, 也可以使用带前缀的 `BackToTheBase:backtothebase` 或者 `BackToTheBase:bttb`。
 
 | 所有命令 | 说明 |
 | --- | --- |
@@ -54,6 +54,8 @@
 | `backtothebase returnpoint <x> <y> <z>` | 设置返回坐标。 |
 | `backtothebase admin add\|remove <player>` | 管理游戏内管理员。 |
 | `backtothebase adminenable true\|false` | 开启或关闭游戏内管理命令。 |
+| `backtothebase lang English` | 将命令输出切换为英文。 |
+| `backtothebase lang Chinese` | 将命令输出切换为中文。 |
 | `backtothebase confirm` | 确认待执行的删除操作。 |
 
 ## 游戏内管理命令
@@ -62,9 +64,10 @@
 
 ```text
 /msg 珍珠号 @backtothebase <command>
+/msg 珍珠号 @bttb <command>
 ```
 
-**大部分控制台命令都支持，但不支持 `admin` 和 `adminenable` 等管理员设置命令。**
+**大部分控制台命令都支持，但不支持 `admin` 和 `adminenable` 等管理员设置命令。`lang` 语言切换命令也只能在控制台使用。**
 
 ## 配置文件
 
@@ -72,6 +75,7 @@
 
 ```json
 {
+  "language": "Chinese",
   "players": {
     "Steve": {
       "locations": [
@@ -107,11 +111,14 @@
 
 说明：
 
+- `language` 控制面向用户的命令输出语言，只接受 `English` 或 `Chinese`。
+- 缺失或无效的 `language` 默认使用 `Chinese`。字段存在后，以配置文件中的值为准。
+- 命令输出通过 Xinbot `LangManager` 从 `lang/en_us.lang` 和 `lang/zh_cn.lang` 加载。
 - `players` 是玩家名到珍珠按钮坐标的映射。
 - `locations[].number` 必须是正整数形式的字符串。
 - `x`、`y`、`z` 是按钮方块本身的精确坐标。
 - `return.enabled` 控制点击后是否返回。
-- `admin.enabled` 控制游戏内 `@backtothebase` 管理命令是否启用。
+- `admin.enabled` 控制游戏内 `@backtothebase` / `@bttb` 管理命令是否启用。
 
 ## 旧版配置兼容
 

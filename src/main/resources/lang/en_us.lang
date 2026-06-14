@@ -1,0 +1,63 @@
+backtothebase.unknown_command=[BackToTheBase] Unknown command.
+backtothebase.save_failed=[BackToTheBase] Failed to save config. Please check the log.
+backtothebase.console_only=[BackToTheBase] This command can only be used from the console.
+backtothebase.usage=[BackToTheBase] Usage: %s
+backtothebase.language.changed=[BackToTheBase] Language changed to %s.
+backtothebase.return.enabled=[BackToTheBase] Return after use enabled.
+backtothebase.return.disabled=[BackToTheBase] Return after use disabled.
+backtothebase.coordinates.integer=[BackToTheBase] Coordinates must be integers.
+backtothebase.number_coordinates.integer=[BackToTheBase] Number and coordinates must be integers.
+backtothebase.return_point.set=[BackToTheBase] Return location set to %d %d %d.
+backtothebase.player.exists=[BackToTheBase] Player %s already exists.
+backtothebase.player.missing=[BackToTheBase] Player %s does not exist.
+backtothebase.player.added=[BackToTheBase] Added player %s.
+backtothebase.player.remove.waiting=[BackToTheBase] Waiting to confirm removing player %s. Run %s to confirm.
+backtothebase.location.missing=[BackToTheBase] Pearl button location %s does not exist.
+backtothebase.location.not_configured=[BackToTheBase] Pearl button location %s is not configured.
+backtothebase.location.last=[BackToTheBase] Cannot remove %s's last pearl button location. Use player remove.
+backtothebase.location.remove.waiting=[BackToTheBase] Waiting to confirm removing %s's pearl button location %s. Run %s to confirm.
+backtothebase.location.exists=[BackToTheBase] Pearl button location %s already exists. Use loc set to replace it.
+backtothebase.location.add.created_player=[BackToTheBase] Created player %s and added pearl button location %s: %d %d %d.
+backtothebase.location.added=[BackToTheBase] Added pearl button location %2$s for %1$s: %3$d %4$d %5$d.
+backtothebase.location.set.created_player=[BackToTheBase] Created player %s and set pearl button location %s: %d %d %d.
+backtothebase.location.updated=[BackToTheBase] Updated %s's pearl button location %s to %d %d %d.
+backtothebase.location.created=[BackToTheBase] Created %s's pearl button location %s: %d %d %d.
+backtothebase.admin.exists=[BackToTheBase] Admin %s already exists.
+backtothebase.admin.missing=[BackToTheBase] Admin %s does not exist.
+backtothebase.admin.limit=[BackToTheBase] Admin limit %d reached. Cannot add %s.
+backtothebase.admin.added=[BackToTheBase] Added admin %s.
+backtothebase.admin.removed=[BackToTheBase] Removed admin %s.
+backtothebase.admin.enabled=[BackToTheBase] In-game admin commands enabled.
+backtothebase.admin.disabled=[BackToTheBase] In-game admin commands disabled.
+backtothebase.pending.none=[BackToTheBase] There is no pending action to confirm.
+backtothebase.pending.expired=[BackToTheBase] The confirmation timed out. Please run the remove command again.
+backtothebase.player.removed.confirmed=[BackToTheBase] Confirmed. Removed player %s.
+backtothebase.location.removed.confirmed=[BackToTheBase] Confirmed. Removed %s's pearl button location %s.
+backtothebase.status.header=[BackToTheBase]: ===== BackToTheBase Status =====
+backtothebase.status.return.running=[BackToTheBase]: Return: running (config: enabled)
+backtothebase.status.return.stopped=[BackToTheBase]: Return: stopped (config: disabled)
+backtothebase.status.return_location=[BackToTheBase]: Return location: %d %d %d
+backtothebase.status.admin.running=[BackToTheBase]: In-game admin: running (config: enabled)
+backtothebase.status.admin.stopped=[BackToTheBase]: In-game admin: stopped (config: disabled)
+backtothebase.status.admin_count=[BackToTheBase]: Admins: %d / %d
+backtothebase.status.player_count=[BackToTheBase]: Players: %d
+backtothebase.status.location_count=[BackToTheBase]: Pearl button locations: %d
+backtothebase.status.player_data=[BackToTheBase]: Player data:
+backtothebase.status.player_data.line=[BackToTheBase]:   %s: %d pearl button locations
+backtothebase.divider=[BackToTheBase]: ================================
+backtothebase.status.game=[BackToTheBase] Status: return=%s, return location=%d %d %d, in-game admin=%s, admins=%d/%d, players=%d, pearl locations=%d
+backtothebase.player_list.header=[BackToTheBase]: ===== BackToTheBase Players =====
+backtothebase.players.none=[BackToTheBase] No player configs.
+backtothebase.players.none.console=[BackToTheBase]: No player configs.
+backtothebase.player.location_data=[BackToTheBase]:   %s: pearl locations %s
+backtothebase.player_list.game=[BackToTheBase] Players: %s
+backtothebase.player_list.entry=%s(pearl locations %s)
+backtothebase.location_list.header=[BackToTheBase]: ===== %s's pearl button locations =====
+backtothebase.location_list.line=[BackToTheBase]:   %s: %d %d %d
+backtothebase.location_list.game=[BackToTheBase] %s's pearl button locations: %s
+backtothebase.enabled=enabled
+backtothebase.disabled=disabled
+backtothebase.movementsync.disabled=[BackToTheBase] MovementSync is not enabled. Cannot run back.
+backtothebase.movementsync.invalid=[BackToTheBase] MovementSync plugin instance is invalid. Cannot run back.
+backtothebase.action.running=[BackToTheBase] A BackToTheBase action is already running.
+backtothebase.back.started=[BackToTheBase] Pulling pearl button location %s.

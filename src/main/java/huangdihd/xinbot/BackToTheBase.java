@@ -16,11 +16,10 @@ import xin.bbtt.mcbot.command.TabExecutor;
 import xin.bbtt.mcbot.plugin.Plugin;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -37,6 +36,10 @@ public class BackToTheBase implements Plugin {
     public static BackToTheBase INSTANCE;
     public PlayerBaseConfig.BaseConfig baseConfig = new PlayerBaseConfig.BaseConfig();
     public static final String config_name = "base_config.json";
+    public static final String COMMAND_NAME = "backtothebase";
+    public static final String COMMAND_ALIAS = "bttb";
+    public static final String GAME_COMMAND_PREFIX = "@" + COMMAND_NAME;
+    public static final String GAME_COMMAND_ALIAS_PREFIX = "@" + COMMAND_ALIAS;
     private static final int MAX_ADMINS = 3;
     private static final long PENDING_ACTION_TIMEOUT_MS = 60_000L;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -49,6 +52,7 @@ public class BackToTheBase implements Plugin {
     @Override
     public void onLoad() {
         INSTANCE = this;
+        BackToTheBaseLanguage.init(getClass().getClassLoader());
 
         File configFile = new File(config_name);
         if (!configFile.exists()) {
@@ -82,7 +86,7 @@ public class BackToTheBase implements Plugin {
     public void onEnable() {
         Bot.INSTANCE.getPluginManager().events().registerEvents(new OnPrivateChat(), this);
         Bot.INSTANCE.getPluginManager().registerCommand(
-                new Command("backtothebase", new String[0], "BackToTheBase management", "backtothebase <command>"),
+                new Command(COMMAND_NAME, new String[]{COMMAND_ALIAS}, "BackToTheBase management", COMMAND_NAME + " <command>"),
                 new BackToTheBaseCommand(),
                 this
         );
@@ -95,6 +99,7 @@ public class BackToTheBase implements Plugin {
 
     private void writeDefaultConfig(File configFile) throws IOException {
         PlayerBaseConfig.BaseConfig defaultConfig = new PlayerBaseConfig.BaseConfig();
+        defaultConfig.setLanguage(BackToTheBaseLanguage.CHINESE);
         Map<String, PlayerBaseConfig> players = new LinkedHashMap<>();
         players.put("example_name", new PlayerBaseConfig(List.of(new ButtonLocation(
                 "1",
@@ -127,7 +132,7 @@ public class BackToTheBase implements Plugin {
 
     private boolean loadConfig(File configFile, boolean runtimeReload) throws IOException {
         JsonObject root;
-        try (Reader reader = new FileReader(configFile)) {
+        try (Reader reader = Files.newBufferedReader(configFile.toPath(), StandardCharsets.UTF_8)) {
             JsonElement parsed = gson.fromJson(reader, JsonElement.class);
             if (parsed == null || !parsed.isJsonObject()) {
                 getLogger().error("Config root must be a JSON object. {}.", runtimeReload ? "Keeping previous config" : "No player configs loaded");
@@ -174,6 +179,9 @@ public class BackToTheBase implements Plugin {
     private LoadResult parseReadmeConfig(JsonObject root) {
         boolean changed = false;
         boolean invalid = false;
+        ConfigValue<String> languageResult = parseLanguage(root);
+        changed |= languageResult.changed;
+        invalid |= languageResult.invalid;
 
         JsonElement playersElement = root.get("players");
         if (playersElement == null || !playersElement.isJsonObject()) {
@@ -208,6 +216,7 @@ public class BackToTheBase implements Plugin {
         invalid |= adminResult.invalid;
 
         PlayerBaseConfig.BaseConfig config = new PlayerBaseConfig.BaseConfig();
+        config.setLanguage(languageResult.value);
         config.setPlayers(players);
         config.setReturnConfig(returnResult.config);
         config.setAdmin(adminResult.config);
@@ -217,11 +226,17 @@ public class BackToTheBase implements Plugin {
     private LoadResult parseLegacyConfig(JsonObject root) {
         boolean changed = false;
         boolean invalid = false;
+        ConfigValue<String> languageResult = parseLanguage(root);
+        changed |= languageResult.changed;
+        invalid |= languageResult.invalid;
         Map<String, PlayerBaseConfig> players = new LinkedHashMap<>();
         LegacyReturnSelection legacyReturnSelection = new LegacyReturnSelection();
 
         for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
             String playerName = entry.getKey();
+            if ("language".equals(playerName)) {
+                continue;
+            }
             if (!entry.getValue().isJsonObject()) {
                 getLogger().error("Config entry for {} must be an object.", playerName);
                 invalid = true;
@@ -266,10 +281,29 @@ public class BackToTheBase implements Plugin {
         }
 
         PlayerBaseConfig.BaseConfig config = new PlayerBaseConfig.BaseConfig();
+        config.setLanguage(languageResult.value);
         config.setPlayers(players);
         config.setReturnConfig(legacyReturnSelection.config);
         config.setAdmin(new PlayerBaseConfig.AdminConfig());
         return new LoadResult(config, changed, invalid);
+    }
+
+    private ConfigValue<String> parseLanguage(JsonObject root) {
+        if (!root.has("language")) {
+            getLogger().warn("Config field language is missing. Defaulting language to Chinese.");
+            return new ConfigValue<>(BackToTheBaseLanguage.CHINESE, true, false);
+        }
+        JsonElement element = root.get("language");
+        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+            getLogger().warn("Config field language must be English or Chinese. Defaulting language to Chinese.");
+            return new ConfigValue<>(BackToTheBaseLanguage.CHINESE, true, false);
+        }
+        String language = BackToTheBaseLanguage.normalize(element.getAsString());
+        if (!BackToTheBaseLanguage.isValid(element.getAsString())) {
+            getLogger().warn("Config field language must be English or Chinese. Defaulting language to Chinese.");
+            return new ConfigValue<>(language, true, false);
+        }
+        return new ConfigValue<>(language, false, false);
     }
 
     private ConfigResult parsePlayerConfig(String playerName, JsonObject obj) {
@@ -614,7 +648,7 @@ public class BackToTheBase implements Plugin {
     }
 
     private void writeConfig(File configFile, PlayerBaseConfig.BaseConfig config) throws IOException {
-        try (Writer writer = new FileWriter(configFile)) {
+        try (Writer writer = Files.newBufferedWriter(configFile.toPath(), StandardCharsets.UTF_8)) {
             gson.toJson(config, writer);
         }
     }
@@ -634,115 +668,145 @@ public class BackToTheBase implements Plugin {
     }
 
     private List<String> saveFailedMessage() {
-        return List.of("[BackToTheBase] 配置保存失败，请检查日志。");
+        return List.of(messages().saveFailed());
+    }
+
+    private BackToTheBaseLanguage messages() {
+        return BackToTheBaseLanguage.of(baseConfig.getLanguage());
     }
 
     public synchronized List<String> handleManagementCommand(String sender, boolean console, String[] args) {
+        String commandPrefix = console ? COMMAND_NAME : GAME_COMMAND_PREFIX;
+        return handleManagementCommand(sender, console, commandPrefix, args);
+    }
+
+    public synchronized List<String> handleManagementCommand(String sender, boolean console, String commandPrefix, String[] args) {
+        BackToTheBaseLanguage lang = messages();
         if (args.length == 0) {
-            return List.of("[BackToTheBase] 未知命令。");
+            return List.of(lang.unknownCommand());
         }
         String scope = console ? "console" : "game:" + sender;
         return switch (args[0].toLowerCase()) {
             case "stat" -> console ? consoleStat() : List.of(gameStat());
             case "confirm" -> confirmPending(scope);
+            case "lang" -> handleLanguage(console, args);
             case "returnenable" -> setReturnEnabled(args);
             case "returnpoint" -> setReturnPoint(args);
-            case "player" -> handlePlayer(scope, args);
-            case "loc" -> handleLoc(scope, args);
-            case "admin" -> console ? handleAdmin(args) : List.of("[BackToTheBase] 该命令只能在控制台使用。");
-            case "adminenable" -> console ? handleAdminEnable(args) : List.of("[BackToTheBase] 该命令只能在控制台使用。");
-            default -> List.of("[BackToTheBase] 未知命令。");
+            case "player" -> handlePlayer(scope, commandPrefix, args);
+            case "loc" -> handleLoc(scope, commandPrefix, args);
+            case "admin" -> console ? handleAdmin(args) : List.of(lang.consoleOnly());
+            case "adminenable" -> console ? handleAdminEnable(args) : List.of(lang.consoleOnly());
+            default -> List.of(lang.unknownCommand());
         };
     }
 
+    private List<String> handleLanguage(boolean console, String[] args) {
+        BackToTheBaseLanguage lang = messages();
+        if (!console) {
+            return List.of(lang.consoleOnly());
+        }
+        if (args.length != 2 || !BackToTheBaseLanguage.isValid(args[1])) {
+            return List.of(lang.usage("lang English|Chinese"));
+        }
+        baseConfig.setLanguage(BackToTheBaseLanguage.normalize(args[1]));
+        if (!saveCurrentConfig()) {
+            return saveFailedMessage();
+        }
+        return List.of(messages().languageChanged(baseConfig.getLanguage()));
+    }
+
     private List<String> setReturnEnabled(String[] args) {
+        BackToTheBaseLanguage lang = messages();
         if (args.length != 2 || (!"true".equalsIgnoreCase(args[1]) && !"false".equalsIgnoreCase(args[1]))) {
-            return List.of("[BackToTheBase] 用法: returnenable true|false");
+            return List.of(lang.usage("returnenable true|false"));
         }
         baseConfig.getReturnConfig().setEnabled(Boolean.parseBoolean(args[1]));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of(Boolean.parseBoolean(args[1]) ? "[BackToTheBase] 已开启返回功能。" : "[BackToTheBase] 已关闭返回功能。");
+        return List.of(messages().returnEnabled(Boolean.parseBoolean(args[1])));
     }
 
     private List<String> setReturnPoint(String[] args) {
+        BackToTheBaseLanguage lang = messages();
         if (args.length != 4) {
-            return List.of("[BackToTheBase] 用法: returnpoint <x> <y> <z>");
+            return List.of(lang.usage("returnpoint <x> <y> <z>"));
         }
         Integer x = parseInt(args[1]);
         Integer y = parseInt(args[2]);
         Integer z = parseInt(args[3]);
         if (x == null || y == null || z == null) {
-            return List.of("[BackToTheBase] 坐标必须是整数。");
+            return List.of(lang.coordinatesMustBeIntegers());
         }
         baseConfig.getReturnConfig().setLocation(new PlayerBaseConfig.ReturnLocation(x, y, z));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of("[BackToTheBase] 已设置返回坐标为 " + x + " " + y + " " + z + "。");
+        return List.of(messages().returnPointSet(x, y, z));
     }
 
-    private List<String> handlePlayer(String scope, String[] args) {
+    private List<String> handlePlayer(String scope, String commandPrefix, String[] args) {
+        BackToTheBaseLanguage lang = messages();
         if (args.length < 2) {
-            return List.of("[BackToTheBase] 用法: player add|remove|list");
+            return List.of(lang.usage("player add|remove|list"));
         }
         if ("list".equalsIgnoreCase(args[1])) {
             return scope.startsWith("console") ? consolePlayerList() : List.of(gamePlayerList());
         }
         if (args.length != 3) {
-            return List.of("[BackToTheBase] 用法: player add|remove <playerName>");
+            return List.of(lang.usage("player add|remove <playerName>"));
         }
         String playerName = args[2];
         if ("add".equalsIgnoreCase(args[1])) {
             if (getPlayerConfigs().containsKey(playerName)) {
-                return List.of("[BackToTheBase] 玩家 " + playerName + " 已存在。");
+                return List.of(lang.playerExists(playerName));
             }
             getPlayerConfigs().put(playerName, new PlayerBaseConfig(new ArrayList<>()));
             if (!saveCurrentConfig()) {
                 return saveFailedMessage();
             }
-            return List.of("[BackToTheBase] 已添加玩家 " + playerName + "。");
+            return List.of(messages().playerAdded(playerName));
         }
         if ("remove".equalsIgnoreCase(args[1])) {
             if (!getPlayerConfigs().containsKey(playerName)) {
-                return List.of("[BackToTheBase] 玩家 " + playerName + " 不存在。");
+                return List.of(lang.playerMissing(playerName));
             }
             pendingActions.put(scope, PendingAction.removePlayer(playerName));
-            return List.of("[BackToTheBase] 等待确认删除玩家 " + playerName + "。请输入 " + confirmCommand(scope) + " 确认。");
+            return List.of(lang.waitingRemovePlayer(playerName, confirmCommand(commandPrefix)));
         }
-        return List.of("[BackToTheBase] 未知命令。");
+        return List.of(lang.unknownCommand());
     }
 
-    private List<String> handleLoc(String scope, String[] args) {
+    private List<String> handleLoc(String scope, String commandPrefix, String[] args) {
+        BackToTheBaseLanguage lang = messages();
         if (args.length < 2) {
-            return List.of("[BackToTheBase] 用法: loc add|set|remove|list");
+            return List.of(lang.usage("loc add|set|remove|list"));
         }
         if ("list".equalsIgnoreCase(args[1])) {
             if (args.length != 3) {
-                return List.of("[BackToTheBase] 用法: loc list <playerName>");
+                return List.of(lang.usage("loc list <playerName>"));
             }
             return scope.startsWith("console") ? consoleLocList(args[2]) : List.of(gameLocList(args[2]));
         }
         if ("remove".equalsIgnoreCase(args[1])) {
             if (args.length != 4) {
-                return List.of("[BackToTheBase] 用法: loc remove <playerName> <number>");
+                return List.of(lang.usage("loc remove <playerName> <number>"));
             }
             PlayerBaseConfig config = getPlayerConfigs().get(args[2]);
             if (config == null) {
-                return List.of("[BackToTheBase] 玩家 " + args[2] + " 不存在。");
+                return List.of(lang.playerMissing(args[2]));
             }
             if (config.getLocation(args[3]) == null) {
-                return List.of("[BackToTheBase] 珍珠坐标 " + args[3] + " 不存在。");
+                return List.of(lang.locationMissing(args[3]));
             }
             if (safeLocations(config).size() <= 1) {
-                return List.of("[BackToTheBase] 不能删除 " + args[2] + " 的最后一个珍珠坐标，请使用 player remove。");
+                return List.of(lang.cannotRemoveLastLocation(args[2]));
             }
             pendingActions.put(scope, PendingAction.removeLoc(args[2], args[3]));
-            return List.of("[BackToTheBase] 等待确认删除 " + args[2] + " 的珍珠坐标 " + args[3] + "。请输入 " + confirmCommand(scope) + " 确认。");
+            return List.of(lang.waitingRemoveLocation(args[2], args[3], confirmCommand(commandPrefix)));
         }
         if (args.length != 7 || (!"add".equalsIgnoreCase(args[1]) && !"set".equalsIgnoreCase(args[1]))) {
-            return List.of("[BackToTheBase] 用法: loc add|set <playerName> <number> <x> <y> <z>");
+            return List.of(lang.usage("loc add|set <playerName> <number> <x> <y> <z>"));
         }
         String playerName = args[2];
         String number = args[3];
@@ -750,7 +814,7 @@ public class BackToTheBase implements Plugin {
         Integer y = parseInt(args[5]);
         Integer z = parseInt(args[6]);
         if (!isPositiveInteger(number) || x == null || y == null || z == null) {
-            return List.of("[BackToTheBase] 编号和坐标必须是整数。");
+            return List.of(lang.numberAndCoordinatesMustBeIntegers());
         }
         PlayerBaseConfig config = getPlayerConfigs().get(playerName);
         boolean createdPlayer = false;
@@ -760,28 +824,25 @@ public class BackToTheBase implements Plugin {
             createdPlayer = true;
         }
         if ("add".equalsIgnoreCase(args[1]) && config.getLocation(number) != null) {
-            return List.of("[BackToTheBase] 珍珠坐标 " + number + " 已存在，请使用 loc set 覆盖。");
+            return List.of(lang.locationExists(number));
         }
         boolean existed = setLocation(config, new ButtonLocation(number, x, y, z));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
         if ("add".equalsIgnoreCase(args[1])) {
-            return List.of(createdPlayer
-                    ? "[BackToTheBase] 已创建玩家 " + playerName + "，并添加珍珠坐标 " + number + ": " + x + " " + y + " " + z + "。"
-                    : "[BackToTheBase] 已为 " + playerName + " 添加珍珠坐标 " + number + ": " + x + " " + y + " " + z + "。");
+            return List.of(messages().locationAddResult(createdPlayer, playerName, number, x, y, z));
         }
         if (createdPlayer) {
-            return List.of("[BackToTheBase] 已创建玩家 " + playerName + "，并设置珍珠坐标 " + number + ": " + x + " " + y + " " + z + "。");
+            return List.of(messages().locationSetCreatedPlayer(playerName, number, x, y, z));
         }
-        return List.of(existed
-                ? "[BackToTheBase] 已更新 " + playerName + " 的珍珠坐标 " + number + " 为 " + x + " " + y + " " + z + "。"
-                : "[BackToTheBase] 已创建 " + playerName + " 的珍珠坐标 " + number + ": " + x + " " + y + " " + z + "。");
+        return List.of(messages().locationSetResult(existed, playerName, number, x, y, z));
     }
 
     private List<String> handleAdmin(String[] args) {
+        BackToTheBaseLanguage lang = messages();
         if (args.length != 3 || (!"add".equalsIgnoreCase(args[1]) && !"remove".equalsIgnoreCase(args[1]))) {
-            return List.of("[BackToTheBase] 用法: admin add|remove <playerName>");
+            return List.of(lang.usage("admin add|remove <playerName>"));
         }
 
         List<String> admins = adminPlayers();
@@ -789,161 +850,175 @@ public class BackToTheBase implements Plugin {
 
         if ("add".equalsIgnoreCase(args[1])) {
             if (admins.contains(playerName)) {
-                return List.of("[BackToTheBase] 管理员 " + playerName + " 已存在。");
+                return List.of(lang.adminExists(playerName));
             }
             if (admins.size() >= MAX_ADMINS) {
-                return List.of("[BackToTheBase] 管理员数量已达到上限 " + MAX_ADMINS + "，无法添加 " + playerName + "。");
+                return List.of(lang.adminLimit(MAX_ADMINS, playerName));
             }
 
             admins.add(playerName);
             if (!saveCurrentConfig()) {
                 return saveFailedMessage();
             }
-            return List.of("[BackToTheBase] 已添加管理员 " + playerName + "。");
+            return List.of(messages().adminAdded(playerName));
         }
 
         if (!admins.contains(playerName)) {
-            return List.of("[BackToTheBase] 管理员 " + playerName + " 不存在。");
+            return List.of(lang.adminMissing(playerName));
         }
 
         admins.remove(playerName);
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of("[BackToTheBase] 已删除管理员 " + playerName + "。");
+        return List.of(messages().adminRemoved(playerName));
     }
 
     private List<String> handleAdminEnable(String[] args) {
+        BackToTheBaseLanguage lang = messages();
         if (args.length != 2 || (!"true".equalsIgnoreCase(args[1]) && !"false".equalsIgnoreCase(args[1]))) {
-            return List.of("[BackToTheBase] 用法: adminenable true|false");
+            return List.of(lang.usage("adminenable true|false"));
         }
         baseConfig.getAdmin().setEnabled(Boolean.parseBoolean(args[1]));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of(baseConfig.getAdmin().isEnabled() ? "[BackToTheBase] 已开启游戏内管理。" : "[BackToTheBase] 已关闭游戏内管理。");
+        return List.of(messages().adminEnabled(baseConfig.getAdmin().isEnabled()));
     }
 
     private List<String> confirmPending(String scope) {
+        BackToTheBaseLanguage lang = messages();
         PendingAction action = pendingActions.remove(scope);
         if (action == null) {
-            return List.of("[BackToTheBase] 没有需要确认的操作。");
+            return List.of(lang.noPendingAction());
         }
         if (action.isExpired()) {
-            return List.of("[BackToTheBase] 确认操作已超时，请重新执行删除命令。");
+            return List.of(lang.pendingExpired());
         }
 
         if (action.type == PendingType.REMOVE_PLAYER) {
             if (!getPlayerConfigs().containsKey(action.playerName)) {
-                return List.of("[BackToTheBase] 玩家 " + action.playerName + " 不存在。");
+                return List.of(lang.playerMissing(action.playerName));
             }
 
             getPlayerConfigs().remove(action.playerName);
             if (!saveCurrentConfig()) {
                 return saveFailedMessage();
             }
-            return List.of("[BackToTheBase] 已确认，删除玩家 " + action.playerName + "。");
+            return List.of(messages().confirmedRemovePlayer(action.playerName));
         }
 
         PlayerBaseConfig config = getPlayerConfigs().get(action.playerName);
         if (config == null) {
-            return List.of("[BackToTheBase] 玩家 " + action.playerName + " 不存在。");
+            return List.of(lang.playerMissing(action.playerName));
         }
         if (config.getLocation(action.number) == null) {
-            return List.of("[BackToTheBase] 珍珠坐标 " + action.number + " 不存在。");
+            return List.of(lang.locationMissing(action.number));
         }
         if (safeLocations(config).size() <= 1) {
-            return List.of("[BackToTheBase] 不能删除 " + action.playerName + " 的最后一个珍珠坐标，请使用 player remove。");
+            return List.of(lang.cannotRemoveLastLocation(action.playerName));
         }
 
         config.getLocations().removeIf(location -> location != null && action.number.equals(location.getNumber()));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of("[BackToTheBase] 已确认，删除 " + action.playerName + " 的珍珠坐标 " + action.number + "。");
+        return List.of(messages().confirmedRemoveLocation(action.playerName, action.number));
     }
 
     private List<String> consoleStat() {
+        BackToTheBaseLanguage lang = messages();
         List<String> lines = new ArrayList<>();
         PlayerBaseConfig.ReturnConfig ret = baseConfig.getReturnConfig();
         PlayerBaseConfig.ReturnLocation loc = ret.getLocation();
-        lines.add("[BackToTheBase]: ===== BackToTheBase 状态 =====");
-        lines.add("[BackToTheBase]: 返回功能: " + (ret.isEnabled() ? "运行中 (配置: 启用)" : "已停止 (配置: 禁用)"));
-        lines.add("[BackToTheBase]: 返回坐标: " + loc.getX() + " " + loc.getY() + " " + loc.getZ());
-        lines.add("[BackToTheBase]: 游戏内管理: " + (baseConfig.getAdmin().isEnabled() ? "运行中 (配置: 启用)" : "已停止 (配置: 禁用)"));
-        lines.add("[BackToTheBase]: 管理员数量: " + adminPlayers().size() + " / " + MAX_ADMINS);
-        lines.add("[BackToTheBase]: 玩家数量: " + getPlayerConfigs().size());
-        lines.add("[BackToTheBase]: 珍珠坐标数量: " + locationCount());
-        lines.add("[BackToTheBase]: 玩家数据:");
+        lines.add(lang.statusHeader());
+        lines.add(lang.returnFeature(ret.isEnabled()));
+        lines.add(lang.returnLocation(loc.getX(), loc.getY(), loc.getZ()));
+        lines.add(lang.adminFeature(baseConfig.getAdmin().isEnabled()));
+        lines.add(lang.adminCount(adminPlayers().size(), MAX_ADMINS));
+        lines.add(lang.playerCount(getPlayerConfigs().size()));
+        lines.add(lang.locationCount(locationCount()));
+        lines.add(lang.playerDataHeader());
         for (Map.Entry<String, PlayerBaseConfig> entry : getPlayerConfigs().entrySet()) {
-            lines.add("[BackToTheBase]:   " + entry.getKey() + ": " + safeLocations(entry.getValue()).size() + " 个珍珠坐标");
+            lines.add(lang.playerDataLine(entry.getKey(), safeLocations(entry.getValue()).size()));
         }
-        lines.add("[BackToTheBase]: ================================");
+        lines.add(lang.divider());
         return lines;
     }
 
     private String gameStat() {
+        BackToTheBaseLanguage lang = messages();
         PlayerBaseConfig.ReturnConfig ret = baseConfig.getReturnConfig();
         PlayerBaseConfig.ReturnLocation loc = ret.getLocation();
-        return "[BackToTheBase] 状态: 返回功能=" + enabledText(ret.isEnabled()) +
-                ", 返回坐标=" + loc.getX() + " " + loc.getY() + " " + loc.getZ() +
-                ", 游戏内管理=" + enabledText(baseConfig.getAdmin().isEnabled()) +
-                ", 管理员=" + adminPlayers().size() + "/" + MAX_ADMINS + ", 玩家=" + getPlayerConfigs().size() +
-                ", 珍珠坐标=" + locationCount();
+        return lang.gameStatus(
+                ret.isEnabled(),
+                loc.getX(),
+                loc.getY(),
+                loc.getZ(),
+                baseConfig.getAdmin().isEnabled(),
+                adminPlayers().size(),
+                MAX_ADMINS,
+                getPlayerConfigs().size(),
+                locationCount()
+        );
     }
 
     private List<String> consolePlayerList() {
+        BackToTheBaseLanguage lang = messages();
         List<String> lines = new ArrayList<>();
-        lines.add("[BackToTheBase]: ===== BackToTheBase 玩家列表 =====");
-        lines.add("[BackToTheBase]: 玩家数量: " + getPlayerConfigs().size());
+        lines.add(lang.playerListHeader());
+        lines.add(lang.playerCount(getPlayerConfigs().size()));
         if (getPlayerConfigs().isEmpty()) {
-            lines.add("[BackToTheBase]: 暂无玩家配置。");
+            lines.add(lang.noPlayersConsole());
         } else {
-            lines.add("[BackToTheBase]: 玩家数据:");
+            lines.add(lang.playerDataHeader());
             for (Map.Entry<String, PlayerBaseConfig> entry : getPlayerConfigs().entrySet()) {
-                lines.add("[BackToTheBase]:   " + entry.getKey() + ": 珍珠坐标 " + locationNumbers(entry.getValue()));
+                lines.add(lang.playerLocationData(entry.getKey(), locationNumbers(entry.getValue())));
             }
         }
-        lines.add("[BackToTheBase]: ================================");
+        lines.add(lang.divider());
         return lines;
     }
 
     private String gamePlayerList() {
+        BackToTheBaseLanguage lang = messages();
         if (getPlayerConfigs().isEmpty()) {
-            return "[BackToTheBase] 暂无玩家配置。";
+            return lang.noPlayers();
         }
         List<String> parts = new ArrayList<>();
         for (Map.Entry<String, PlayerBaseConfig> entry : getPlayerConfigs().entrySet()) {
-            parts.add(entry.getKey() + "(珍珠坐标 " + locationNumbers(entry.getValue()) + ")");
+            parts.add(lang.gamePlayerEntry(entry.getKey(), locationNumbers(entry.getValue())));
         }
-        return "[BackToTheBase] 玩家列表: " + String.join("; ", parts);
+        return lang.gamePlayerList(String.join("; ", parts));
     }
 
     private List<String> consoleLocList(String playerName) {
+        BackToTheBaseLanguage lang = messages();
         PlayerBaseConfig config = getPlayerConfigs().get(playerName);
         if (config == null) {
-            return List.of("[BackToTheBase]: 玩家 " + playerName + " 不存在。");
+            return List.of(lang.playerMissing(playerName));
         }
         List<String> lines = new ArrayList<>();
-        lines.add("[BackToTheBase]: ===== " + playerName + " 的珍珠坐标 =====");
-        lines.add("[BackToTheBase]: 珍珠坐标数量: " + safeLocations(config).size());
+        lines.add(lang.locationListHeader(playerName));
+        lines.add(lang.locationCount(safeLocations(config).size()));
         for (ButtonLocation location : safeLocations(config)) {
-            lines.add("[BackToTheBase]:   " + location.getNumber() + ": " + location.getX() + " " + location.getY() + " " + location.getZ());
+            lines.add(lang.locationLine(location.getNumber(), location.getX(), location.getY(), location.getZ()));
         }
-        lines.add("[BackToTheBase]: ================================");
+        lines.add(lang.divider());
         return lines;
     }
 
     private String gameLocList(String playerName) {
+        BackToTheBaseLanguage lang = messages();
         PlayerBaseConfig config = getPlayerConfigs().get(playerName);
         if (config == null) {
-            return "[BackToTheBase] 玩家 " + playerName + " 不存在。";
+            return lang.playerMissing(playerName);
         }
         List<String> parts = new ArrayList<>();
         for (ButtonLocation location : safeLocations(config)) {
             parts.add(location.getNumber() + "=" + location.getX() + " " + location.getY() + " " + location.getZ());
         }
-        return "[BackToTheBase] " + playerName + " 的珍珠坐标: " + String.join("; ", parts);
+        return lang.gameLocationList(playerName, String.join("; ", parts));
     }
 
     private boolean setLocation(PlayerBaseConfig config, ButtonLocation replacement) {
@@ -997,10 +1072,6 @@ public class BackToTheBase implements Plugin {
         return count;
     }
 
-    private String enabledText(boolean enabled) {
-        return enabled ? "启用" : "禁用";
-    }
-
     private Integer parseInt(String value) {
         try {
             return Integer.parseInt(value);
@@ -1009,8 +1080,11 @@ public class BackToTheBase implements Plugin {
         }
     }
 
-    private String confirmCommand(String scope) {
-        return scope.startsWith("console") ? "backtothebase confirm" : "@backtothebase confirm";
+    private String confirmCommand(String commandPrefix) {
+        if (commandPrefix == null || commandPrefix.isBlank()) {
+            commandPrefix = COMMAND_NAME;
+        }
+        return commandPrefix + " confirm";
     }
 
     private String formatConsoleLogMessage(String line) {
@@ -1033,7 +1107,7 @@ public class BackToTheBase implements Plugin {
             if (args == null) {
                 args = new String[0];
             }
-            for (String line : handleManagementCommand("console", true, args)) {
+            for (String line : handleManagementCommand("console", true, normalizeConsoleCommandLabel(label), args)) {
                 if (line == null || line.isBlank()) {
                     continue;
                 }
@@ -1046,6 +1120,10 @@ public class BackToTheBase implements Plugin {
 
         @Override
         public List<String> onTabComplete(Command command, String label, String[] args) {
+            // Prevent tab completion from responding to unexpected command labels.
+            if (!isPlainCommandLabel(label)) {
+                return List.of();
+            }
             if (args == null || args.length == 0) {
                 return rootSuggestions("");
             }
@@ -1056,6 +1134,7 @@ public class BackToTheBase implements Plugin {
             return switch (root) {
                 case "returnenable" -> args.length == 2 ? filter(List.of("true", "false"), args[1]) : List.of();
                 case "adminenable" -> args.length == 2 ? filter(List.of("true", "false"), args[1]) : List.of();
+                case "lang" -> args.length == 2 ? filter(List.of(BackToTheBaseLanguage.ENGLISH, BackToTheBaseLanguage.CHINESE), args[1]) : List.of();
                 case "player" -> completePlayer(args);
                 case "loc" -> completeLoc(args);
                 case "admin" -> completeAdmin(args);
@@ -1063,8 +1142,15 @@ public class BackToTheBase implements Plugin {
             };
         }
 
+        private boolean isPlainCommandLabel(String label) {
+            return COMMAND_NAME.equalsIgnoreCase(label)
+                    || COMMAND_ALIAS.equalsIgnoreCase(label)
+                    || ("BackToTheBase:" + COMMAND_NAME).equalsIgnoreCase(label)
+                    || ("BackToTheBase:" + COMMAND_ALIAS).equalsIgnoreCase(label);
+        }
+
         private List<String> rootSuggestions(String prefix) {
-            return filter(List.of("stat", "confirm", "returnenable", "returnpoint", "player", "loc", "admin", "adminenable"), prefix);
+            return filter(List.of("stat", "confirm", "lang", "returnenable", "returnpoint", "player", "loc", "admin", "adminenable"), prefix);
         }
 
         private List<String> completePlayer(String[] args) {
@@ -1120,6 +1206,13 @@ public class BackToTheBase implements Plugin {
             }
             return matches;
         }
+    }
+
+    private String normalizeConsoleCommandLabel(String label) {
+        if (COMMAND_ALIAS.equalsIgnoreCase(label) || ("BackToTheBase:" + COMMAND_ALIAS).equalsIgnoreCase(label)) {
+            return COMMAND_ALIAS;
+        }
+        return COMMAND_NAME;
     }
 
     private enum PendingType {

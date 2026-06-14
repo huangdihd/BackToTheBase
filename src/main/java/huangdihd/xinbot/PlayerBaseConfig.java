@@ -45,10 +45,22 @@ public class PlayerBaseConfig {
     }
 
     public static class BaseConfig {
+        private String language = BackToTheBaseLanguage.CHINESE;
         private Map<String, PlayerBaseConfig> players = new LinkedHashMap<>();
         @SerializedName("return")
         private ReturnConfig returnConfig = new ReturnConfig();
         private AdminConfig admin = new AdminConfig();
+
+        public String getLanguage() {
+            if (!BackToTheBaseLanguage.isValid(language)) {
+                language = BackToTheBaseLanguage.CHINESE;
+            }
+            return language;
+        }
+
+        public void setLanguage(String language) {
+            this.language = BackToTheBaseLanguage.normalize(language);
+        }
 
         public Map<String, PlayerBaseConfig> getPlayers() {
             if (players == null) {

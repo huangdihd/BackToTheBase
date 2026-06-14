@@ -1,0 +1,63 @@
+backtothebase.unknown_command=[BackToTheBase] 未知命令。
+backtothebase.save_failed=[BackToTheBase] 配置保存失败，请检查日志。
+backtothebase.console_only=[BackToTheBase] 该命令只能在控制台使用。
+backtothebase.usage=[BackToTheBase] 用法: %s
+backtothebase.language.changed=[BackToTheBase] 语言已切换为 %s。
+backtothebase.return.enabled=[BackToTheBase] 已开启返回功能。
+backtothebase.return.disabled=[BackToTheBase] 已关闭返回功能。
+backtothebase.coordinates.integer=[BackToTheBase] 坐标必须是整数。
+backtothebase.number_coordinates.integer=[BackToTheBase] 编号和坐标必须是整数。
+backtothebase.return_point.set=[BackToTheBase] 已设置返回坐标为 %d %d %d。
+backtothebase.player.exists=[BackToTheBase] 玩家 %s 已存在。
+backtothebase.player.missing=[BackToTheBase] 玩家 %s 不存在。
+backtothebase.player.added=[BackToTheBase] 已添加玩家 %s。
+backtothebase.player.remove.waiting=[BackToTheBase] 等待确认删除玩家 %s。请输入 %s 确认。
+backtothebase.location.missing=[BackToTheBase] 珍珠坐标 %s 不存在。
+backtothebase.location.not_configured=[BackToTheBase] 珍珠坐标 %s 未配置。
+backtothebase.location.last=[BackToTheBase] 不能删除 %s 的最后一个珍珠坐标，请使用 player remove。
+backtothebase.location.remove.waiting=[BackToTheBase] 等待确认删除 %s 的珍珠坐标 %s。请输入 %s 确认。
+backtothebase.location.exists=[BackToTheBase] 珍珠坐标 %s 已存在，请使用 loc set 覆盖。
+backtothebase.location.add.created_player=[BackToTheBase] 已创建玩家 %s，并添加珍珠坐标 %s: %d %d %d。
+backtothebase.location.added=[BackToTheBase] 已为 %s 添加珍珠坐标 %s: %d %d %d。
+backtothebase.location.set.created_player=[BackToTheBase] 已创建玩家 %s，并设置珍珠坐标 %s: %d %d %d。
+backtothebase.location.updated=[BackToTheBase] 已更新 %s 的珍珠坐标 %s 为 %d %d %d。
+backtothebase.location.created=[BackToTheBase] 已创建 %s 的珍珠坐标 %s: %d %d %d。
+backtothebase.admin.exists=[BackToTheBase] 管理员 %s 已存在。
+backtothebase.admin.missing=[BackToTheBase] 管理员 %s 不存在。
+backtothebase.admin.limit=[BackToTheBase] 管理员数量已达到上限 %d，无法添加 %s。
+backtothebase.admin.added=[BackToTheBase] 已添加管理员 %s。
+backtothebase.admin.removed=[BackToTheBase] 已删除管理员 %s。
+backtothebase.admin.enabled=[BackToTheBase] 已开启游戏内管理。
+backtothebase.admin.disabled=[BackToTheBase] 已关闭游戏内管理。
+backtothebase.pending.none=[BackToTheBase] 没有需要确认的操作。
+backtothebase.pending.expired=[BackToTheBase] 确认操作已超时，请重新执行删除命令。
+backtothebase.player.removed.confirmed=[BackToTheBase] 已确认，删除玩家 %s。
+backtothebase.location.removed.confirmed=[BackToTheBase] 已确认，删除 %s 的珍珠坐标 %s。
+backtothebase.status.header=[BackToTheBase]: ===== BackToTheBase 状态 =====
+backtothebase.status.return.running=[BackToTheBase]: 返回功能: 运行中 (配置: 启用)
+backtothebase.status.return.stopped=[BackToTheBase]: 返回功能: 已停止 (配置: 禁用)
+backtothebase.status.return_location=[BackToTheBase]: 返回坐标: %d %d %d
+backtothebase.status.admin.running=[BackToTheBase]: 游戏内管理: 运行中 (配置: 启用)
+backtothebase.status.admin.stopped=[BackToTheBase]: 游戏内管理: 已停止 (配置: 禁用)
+backtothebase.status.admin_count=[BackToTheBase]: 管理员数量: %d / %d
+backtothebase.status.player_count=[BackToTheBase]: 玩家数量: %d
+backtothebase.status.location_count=[BackToTheBase]: 珍珠坐标数量: %d
+backtothebase.status.player_data=[BackToTheBase]: 玩家数据:
+backtothebase.status.player_data.line=[BackToTheBase]:   %s: %d 个珍珠坐标
+backtothebase.divider=[BackToTheBase]: ================================
+backtothebase.status.game=[BackToTheBase] 状态: 返回功能=%s, 返回坐标=%d %d %d, 游戏内管理=%s, 管理员=%d/%d, 玩家=%d, 珍珠坐标=%d
+backtothebase.player_list.header=[BackToTheBase]: ===== BackToTheBase 玩家列表 =====
+backtothebase.players.none=[BackToTheBase] 暂无玩家配置。
+backtothebase.players.none.console=[BackToTheBase]: 暂无玩家配置。
+backtothebase.player.location_data=[BackToTheBase]:   %s: 珍珠坐标 %s
+backtothebase.player_list.game=[BackToTheBase] 玩家列表: %s
+backtothebase.player_list.entry=%s(珍珠坐标 %s)
+backtothebase.location_list.header=[BackToTheBase]: ===== %s 的珍珠坐标 =====
+backtothebase.location_list.line=[BackToTheBase]:   %s: %d %d %d
+backtothebase.location_list.game=[BackToTheBase] %s 的珍珠坐标: %s
+backtothebase.enabled=启用
+backtothebase.disabled=禁用
+backtothebase.movementsync.disabled=[BackToTheBase] MovementSync 未启用，无法执行 back 命令。
+backtothebase.movementsync.invalid=[BackToTheBase] MovementSync 插件实例异常，无法执行 back 命令。
+backtothebase.action.running=[BackToTheBase] 已有拉珍珠任务正在运行。
+backtothebase.back.started=[BackToTheBase] 正在拉动珍珠坐标 %s。
