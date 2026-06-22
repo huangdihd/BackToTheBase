@@ -11,6 +11,7 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xin.bbtt.mcbot.Bot;
+import xin.bbtt.mcbot.LangManager;
 import xin.bbtt.mcbot.command.Command;
 import xin.bbtt.mcbot.command.TabExecutor;
 import xin.bbtt.mcbot.plugin.Plugin;
@@ -52,7 +53,7 @@ public class BackToTheBase implements Plugin {
     @Override
     public void onLoad() {
         INSTANCE = this;
-        BackToTheBaseLanguage.init(getClass().getClassLoader());
+        LangManager.initLang(getClass().getClassLoader());
 
         File configFile = new File(config_name);
         if (!configFile.exists()) {
@@ -99,7 +100,6 @@ public class BackToTheBase implements Plugin {
 
     private void writeDefaultConfig(File configFile) throws IOException {
         PlayerBaseConfig.BaseConfig defaultConfig = new PlayerBaseConfig.BaseConfig();
-        defaultConfig.setLanguage(BackToTheBaseLanguage.CHINESE);
         Map<String, PlayerBaseConfig> players = new LinkedHashMap<>();
         players.put("example_name", new PlayerBaseConfig(List.of(new ButtonLocation(
                 "1",
@@ -179,9 +179,6 @@ public class BackToTheBase implements Plugin {
     private LoadResult parseReadmeConfig(JsonObject root) {
         boolean changed = false;
         boolean invalid = false;
-        ConfigValue<String> languageResult = parseLanguage(root);
-        changed |= languageResult.changed;
-        invalid |= languageResult.invalid;
 
         JsonElement playersElement = root.get("players");
         if (playersElement == null || !playersElement.isJsonObject()) {
@@ -216,7 +213,6 @@ public class BackToTheBase implements Plugin {
         invalid |= adminResult.invalid;
 
         PlayerBaseConfig.BaseConfig config = new PlayerBaseConfig.BaseConfig();
-        config.setLanguage(languageResult.value);
         config.setPlayers(players);
         config.setReturnConfig(returnResult.config);
         config.setAdmin(adminResult.config);
@@ -226,15 +222,13 @@ public class BackToTheBase implements Plugin {
     private LoadResult parseLegacyConfig(JsonObject root) {
         boolean changed = false;
         boolean invalid = false;
-        ConfigValue<String> languageResult = parseLanguage(root);
-        changed |= languageResult.changed;
-        invalid |= languageResult.invalid;
         Map<String, PlayerBaseConfig> players = new LinkedHashMap<>();
         LegacyReturnSelection legacyReturnSelection = new LegacyReturnSelection();
 
         for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
             String playerName = entry.getKey();
             if ("language".equals(playerName)) {
+                // Legacy configs may still carry a top-level language field; ignore it.
                 continue;
             }
             if (!entry.getValue().isJsonObject()) {
@@ -281,29 +275,10 @@ public class BackToTheBase implements Plugin {
         }
 
         PlayerBaseConfig.BaseConfig config = new PlayerBaseConfig.BaseConfig();
-        config.setLanguage(languageResult.value);
         config.setPlayers(players);
         config.setReturnConfig(legacyReturnSelection.config);
         config.setAdmin(new PlayerBaseConfig.AdminConfig());
         return new LoadResult(config, changed, invalid);
-    }
-
-    private ConfigValue<String> parseLanguage(JsonObject root) {
-        if (!root.has("language")) {
-            getLogger().warn("Config field language is missing. Defaulting language to Chinese.");
-            return new ConfigValue<>(BackToTheBaseLanguage.CHINESE, true, false);
-        }
-        JsonElement element = root.get("language");
-        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
-            getLogger().warn("Config field language must be English or Chinese. Defaulting language to Chinese.");
-            return new ConfigValue<>(BackToTheBaseLanguage.CHINESE, true, false);
-        }
-        String language = BackToTheBaseLanguage.normalize(element.getAsString());
-        if (!BackToTheBaseLanguage.isValid(element.getAsString())) {
-            getLogger().warn("Config field language must be English or Chinese. Defaulting language to Chinese.");
-            return new ConfigValue<>(language, true, false);
-        }
-        return new ConfigValue<>(language, false, false);
     }
 
     private ConfigResult parsePlayerConfig(String playerName, JsonObject obj) {
@@ -668,11 +643,7 @@ public class BackToTheBase implements Plugin {
     }
 
     private List<String> saveFailedMessage() {
-        return List.of(messages().saveFailed());
-    }
-
-    private BackToTheBaseLanguage messages() {
-        return BackToTheBaseLanguage.of(baseConfig.getLanguage());
+        return List.of(LangManager.get("backtothebase.save_failed"));
     }
 
     public synchronized List<String> handleManagementCommand(String sender, boolean console, String[] args) {
@@ -681,132 +652,112 @@ public class BackToTheBase implements Plugin {
     }
 
     public synchronized List<String> handleManagementCommand(String sender, boolean console, String commandPrefix, String[] args) {
-        BackToTheBaseLanguage lang = messages();
         if (args.length == 0) {
-            return List.of(lang.unknownCommand());
+            return List.of(LangManager.get("backtothebase.unknown_command"));
         }
         String scope = console ? "console" : "game:" + sender;
         return switch (args[0].toLowerCase()) {
             case "stat" -> console ? consoleStat() : List.of(gameStat());
             case "confirm" -> confirmPending(scope);
-            case "lang" -> handleLanguage(console, args);
             case "returnenable" -> setReturnEnabled(args);
             case "returnpoint" -> setReturnPoint(args);
             case "player" -> handlePlayer(scope, commandPrefix, args);
             case "loc" -> handleLoc(scope, commandPrefix, args);
-            case "admin" -> console ? handleAdmin(args) : List.of(lang.consoleOnly());
-            case "adminenable" -> console ? handleAdminEnable(args) : List.of(lang.consoleOnly());
-            default -> List.of(lang.unknownCommand());
+            case "admin" -> console ? handleAdmin(args) : List.of(LangManager.get("backtothebase.console_only"));
+            case "adminenable" -> console ? handleAdminEnable(args) : List.of(LangManager.get("backtothebase.console_only"));
+            default -> List.of(LangManager.get("backtothebase.unknown_command"));
         };
     }
 
-    private List<String> handleLanguage(boolean console, String[] args) {
-        BackToTheBaseLanguage lang = messages();
-        if (!console) {
-            return List.of(lang.consoleOnly());
-        }
-        if (args.length != 2 || !BackToTheBaseLanguage.isValid(args[1])) {
-            return List.of(lang.usage("lang English|Chinese"));
-        }
-        baseConfig.setLanguage(BackToTheBaseLanguage.normalize(args[1]));
-        if (!saveCurrentConfig()) {
-            return saveFailedMessage();
-        }
-        return List.of(messages().languageChanged(baseConfig.getLanguage()));
-    }
-
     private List<String> setReturnEnabled(String[] args) {
-        BackToTheBaseLanguage lang = messages();
         if (args.length != 2 || (!"true".equalsIgnoreCase(args[1]) && !"false".equalsIgnoreCase(args[1]))) {
-            return List.of(lang.usage("returnenable true|false"));
+            return List.of(LangManager.get("backtothebase.usage", "returnenable true|false"));
         }
         baseConfig.getReturnConfig().setEnabled(Boolean.parseBoolean(args[1]));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of(messages().returnEnabled(Boolean.parseBoolean(args[1])));
+        return List.of(LangManager.get(Boolean.parseBoolean(args[1])
+                ? "backtothebase.return.enabled" : "backtothebase.return.disabled"));
     }
 
     private List<String> setReturnPoint(String[] args) {
-        BackToTheBaseLanguage lang = messages();
         if (args.length != 4) {
-            return List.of(lang.usage("returnpoint <x> <y> <z>"));
+            return List.of(LangManager.get("backtothebase.usage", "returnpoint <x> <y> <z>"));
         }
         Integer x = parseInt(args[1]);
         Integer y = parseInt(args[2]);
         Integer z = parseInt(args[3]);
         if (x == null || y == null || z == null) {
-            return List.of(lang.coordinatesMustBeIntegers());
+            return List.of(LangManager.get("backtothebase.coordinates.integer"));
         }
         baseConfig.getReturnConfig().setLocation(new PlayerBaseConfig.ReturnLocation(x, y, z));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of(messages().returnPointSet(x, y, z));
+        return List.of(LangManager.get("backtothebase.return_point.set", x, y, z));
     }
 
     private List<String> handlePlayer(String scope, String commandPrefix, String[] args) {
-        BackToTheBaseLanguage lang = messages();
         if (args.length < 2) {
-            return List.of(lang.usage("player add|remove|list"));
+            return List.of(LangManager.get("backtothebase.usage", "player add|remove|list"));
         }
         if ("list".equalsIgnoreCase(args[1])) {
             return scope.startsWith("console") ? consolePlayerList() : List.of(gamePlayerList());
         }
         if (args.length != 3) {
-            return List.of(lang.usage("player add|remove <playerName>"));
+            return List.of(LangManager.get("backtothebase.usage", "player add|remove <playerName>"));
         }
         String playerName = args[2];
         if ("add".equalsIgnoreCase(args[1])) {
             if (getPlayerConfigs().containsKey(playerName)) {
-                return List.of(lang.playerExists(playerName));
+                return List.of(LangManager.get("backtothebase.player.exists", playerName));
             }
             getPlayerConfigs().put(playerName, new PlayerBaseConfig(new ArrayList<>()));
             if (!saveCurrentConfig()) {
                 return saveFailedMessage();
             }
-            return List.of(messages().playerAdded(playerName));
+            return List.of(LangManager.get("backtothebase.player.added", playerName));
         }
         if ("remove".equalsIgnoreCase(args[1])) {
             if (!getPlayerConfigs().containsKey(playerName)) {
-                return List.of(lang.playerMissing(playerName));
+                return List.of(LangManager.get("backtothebase.player.missing", playerName));
             }
             pendingActions.put(scope, PendingAction.removePlayer(playerName));
-            return List.of(lang.waitingRemovePlayer(playerName, confirmCommand(commandPrefix)));
+            return List.of(LangManager.get("backtothebase.player.remove.waiting", playerName, confirmCommand(commandPrefix)));
         }
-        return List.of(lang.unknownCommand());
+        return List.of(LangManager.get("backtothebase.unknown_command"));
     }
 
     private List<String> handleLoc(String scope, String commandPrefix, String[] args) {
-        BackToTheBaseLanguage lang = messages();
         if (args.length < 2) {
-            return List.of(lang.usage("loc add|set|remove|list"));
+            return List.of(LangManager.get("backtothebase.usage", "loc add|set|remove|list"));
         }
         if ("list".equalsIgnoreCase(args[1])) {
             if (args.length != 3) {
-                return List.of(lang.usage("loc list <playerName>"));
+                return List.of(LangManager.get("backtothebase.usage", "loc list <playerName>"));
             }
             return scope.startsWith("console") ? consoleLocList(args[2]) : List.of(gameLocList(args[2]));
         }
         if ("remove".equalsIgnoreCase(args[1])) {
             if (args.length != 4) {
-                return List.of(lang.usage("loc remove <playerName> <number>"));
+                return List.of(LangManager.get("backtothebase.usage", "loc remove <playerName> <number>"));
             }
             PlayerBaseConfig config = getPlayerConfigs().get(args[2]);
             if (config == null) {
-                return List.of(lang.playerMissing(args[2]));
+                return List.of(LangManager.get("backtothebase.player.missing", args[2]));
             }
             if (config.getLocation(args[3]) == null) {
-                return List.of(lang.locationMissing(args[3]));
+                return List.of(LangManager.get("backtothebase.location.missing", args[3]));
             }
             if (safeLocations(config).size() <= 1) {
-                return List.of(lang.cannotRemoveLastLocation(args[2]));
+                return List.of(LangManager.get("backtothebase.location.last", args[2]));
             }
             pendingActions.put(scope, PendingAction.removeLoc(args[2], args[3]));
-            return List.of(lang.waitingRemoveLocation(args[2], args[3], confirmCommand(commandPrefix)));
+            return List.of(LangManager.get("backtothebase.location.remove.waiting", args[2], args[3], confirmCommand(commandPrefix)));
         }
         if (args.length != 7 || (!"add".equalsIgnoreCase(args[1]) && !"set".equalsIgnoreCase(args[1]))) {
-            return List.of(lang.usage("loc add|set <playerName> <number> <x> <y> <z>"));
+            return List.of(LangManager.get("backtothebase.usage", "loc add|set <playerName> <number> <x> <y> <z>"));
         }
         String playerName = args[2];
         String number = args[3];
@@ -814,7 +765,7 @@ public class BackToTheBase implements Plugin {
         Integer y = parseInt(args[5]);
         Integer z = parseInt(args[6]);
         if (!isPositiveInteger(number) || x == null || y == null || z == null) {
-            return List.of(lang.numberAndCoordinatesMustBeIntegers());
+            return List.of(LangManager.get("backtothebase.number_coordinates.integer"));
         }
         PlayerBaseConfig config = getPlayerConfigs().get(playerName);
         boolean createdPlayer = false;
@@ -824,25 +775,28 @@ public class BackToTheBase implements Plugin {
             createdPlayer = true;
         }
         if ("add".equalsIgnoreCase(args[1]) && config.getLocation(number) != null) {
-            return List.of(lang.locationExists(number));
+            return List.of(LangManager.get("backtothebase.location.exists", number));
         }
         boolean existed = setLocation(config, new ButtonLocation(number, x, y, z));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
         if ("add".equalsIgnoreCase(args[1])) {
-            return List.of(messages().locationAddResult(createdPlayer, playerName, number, x, y, z));
+            return List.of(LangManager.get(createdPlayer
+                            ? "backtothebase.location.add.created_player" : "backtothebase.location.added",
+                    playerName, number, x, y, z));
         }
         if (createdPlayer) {
-            return List.of(messages().locationSetCreatedPlayer(playerName, number, x, y, z));
+            return List.of(LangManager.get("backtothebase.location.set.created_player", playerName, number, x, y, z));
         }
-        return List.of(messages().locationSetResult(existed, playerName, number, x, y, z));
+        return List.of(LangManager.get(existed
+                        ? "backtothebase.location.updated" : "backtothebase.location.created",
+                playerName, number, x, y, z));
     }
 
     private List<String> handleAdmin(String[] args) {
-        BackToTheBaseLanguage lang = messages();
         if (args.length != 3 || (!"add".equalsIgnoreCase(args[1]) && !"remove".equalsIgnoreCase(args[1]))) {
-            return List.of(lang.usage("admin add|remove <playerName>"));
+            return List.of(LangManager.get("backtothebase.usage", "admin add|remove <playerName>"));
         }
 
         List<String> admins = adminPlayers();
@@ -850,112 +804,111 @@ public class BackToTheBase implements Plugin {
 
         if ("add".equalsIgnoreCase(args[1])) {
             if (admins.contains(playerName)) {
-                return List.of(lang.adminExists(playerName));
+                return List.of(LangManager.get("backtothebase.admin.exists", playerName));
             }
             if (admins.size() >= MAX_ADMINS) {
-                return List.of(lang.adminLimit(MAX_ADMINS, playerName));
+                return List.of(LangManager.get("backtothebase.admin.limit", MAX_ADMINS, playerName));
             }
 
             admins.add(playerName);
             if (!saveCurrentConfig()) {
                 return saveFailedMessage();
             }
-            return List.of(messages().adminAdded(playerName));
+            return List.of(LangManager.get("backtothebase.admin.added", playerName));
         }
 
         if (!admins.contains(playerName)) {
-            return List.of(lang.adminMissing(playerName));
+            return List.of(LangManager.get("backtothebase.admin.missing", playerName));
         }
 
         admins.remove(playerName);
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of(messages().adminRemoved(playerName));
+        return List.of(LangManager.get("backtothebase.admin.removed", playerName));
     }
 
     private List<String> handleAdminEnable(String[] args) {
-        BackToTheBaseLanguage lang = messages();
         if (args.length != 2 || (!"true".equalsIgnoreCase(args[1]) && !"false".equalsIgnoreCase(args[1]))) {
-            return List.of(lang.usage("adminenable true|false"));
+            return List.of(LangManager.get("backtothebase.usage", "adminenable true|false"));
         }
         baseConfig.getAdmin().setEnabled(Boolean.parseBoolean(args[1]));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of(messages().adminEnabled(baseConfig.getAdmin().isEnabled()));
+        return List.of(LangManager.get(baseConfig.getAdmin().isEnabled()
+                ? "backtothebase.admin.enabled" : "backtothebase.admin.disabled"));
     }
 
     private List<String> confirmPending(String scope) {
-        BackToTheBaseLanguage lang = messages();
         PendingAction action = pendingActions.remove(scope);
         if (action == null) {
-            return List.of(lang.noPendingAction());
+            return List.of(LangManager.get("backtothebase.pending.none"));
         }
         if (action.isExpired()) {
-            return List.of(lang.pendingExpired());
+            return List.of(LangManager.get("backtothebase.pending.expired"));
         }
 
         if (action.type == PendingType.REMOVE_PLAYER) {
             if (!getPlayerConfigs().containsKey(action.playerName)) {
-                return List.of(lang.playerMissing(action.playerName));
+                return List.of(LangManager.get("backtothebase.player.missing", action.playerName));
             }
 
             getPlayerConfigs().remove(action.playerName);
             if (!saveCurrentConfig()) {
                 return saveFailedMessage();
             }
-            return List.of(messages().confirmedRemovePlayer(action.playerName));
+            return List.of(LangManager.get("backtothebase.player.removed.confirmed", action.playerName));
         }
 
         PlayerBaseConfig config = getPlayerConfigs().get(action.playerName);
         if (config == null) {
-            return List.of(lang.playerMissing(action.playerName));
+            return List.of(LangManager.get("backtothebase.player.missing", action.playerName));
         }
         if (config.getLocation(action.number) == null) {
-            return List.of(lang.locationMissing(action.number));
+            return List.of(LangManager.get("backtothebase.location.missing", action.number));
         }
         if (safeLocations(config).size() <= 1) {
-            return List.of(lang.cannotRemoveLastLocation(action.playerName));
+            return List.of(LangManager.get("backtothebase.location.last", action.playerName));
         }
 
         config.getLocations().removeIf(location -> location != null && action.number.equals(location.getNumber()));
         if (!saveCurrentConfig()) {
             return saveFailedMessage();
         }
-        return List.of(messages().confirmedRemoveLocation(action.playerName, action.number));
+        return List.of(LangManager.get("backtothebase.location.removed.confirmed", action.playerName, action.number));
     }
 
     private List<String> consoleStat() {
-        BackToTheBaseLanguage lang = messages();
         List<String> lines = new ArrayList<>();
         PlayerBaseConfig.ReturnConfig ret = baseConfig.getReturnConfig();
         PlayerBaseConfig.ReturnLocation loc = ret.getLocation();
-        lines.add(lang.statusHeader());
-        lines.add(lang.returnFeature(ret.isEnabled()));
-        lines.add(lang.returnLocation(loc.getX(), loc.getY(), loc.getZ()));
-        lines.add(lang.adminFeature(baseConfig.getAdmin().isEnabled()));
-        lines.add(lang.adminCount(adminPlayers().size(), MAX_ADMINS));
-        lines.add(lang.playerCount(getPlayerConfigs().size()));
-        lines.add(lang.locationCount(locationCount()));
-        lines.add(lang.playerDataHeader());
+        lines.add(LangManager.get("backtothebase.status.header"));
+        lines.add(LangManager.get(ret.isEnabled()
+                ? "backtothebase.status.return.running" : "backtothebase.status.return.stopped"));
+        lines.add(LangManager.get("backtothebase.status.return_location", loc.getX(), loc.getY(), loc.getZ()));
+        lines.add(LangManager.get(baseConfig.getAdmin().isEnabled()
+                ? "backtothebase.status.admin.running" : "backtothebase.status.admin.stopped"));
+        lines.add(LangManager.get("backtothebase.status.admin_count", adminPlayers().size(), MAX_ADMINS));
+        lines.add(LangManager.get("backtothebase.status.player_count", getPlayerConfigs().size()));
+        lines.add(LangManager.get("backtothebase.status.location_count", locationCount()));
+        lines.add(LangManager.get("backtothebase.status.player_data"));
         for (Map.Entry<String, PlayerBaseConfig> entry : getPlayerConfigs().entrySet()) {
-            lines.add(lang.playerDataLine(entry.getKey(), safeLocations(entry.getValue()).size()));
+            lines.add(LangManager.get("backtothebase.status.player_data.line", entry.getKey(), safeLocations(entry.getValue()).size()));
         }
-        lines.add(lang.divider());
+        lines.add(LangManager.get("backtothebase.divider"));
         return lines;
     }
 
     private String gameStat() {
-        BackToTheBaseLanguage lang = messages();
         PlayerBaseConfig.ReturnConfig ret = baseConfig.getReturnConfig();
         PlayerBaseConfig.ReturnLocation loc = ret.getLocation();
-        return lang.gameStatus(
-                ret.isEnabled(),
+        return LangManager.get("backtothebase.status.game",
+                enabledText(ret.isEnabled()),
                 loc.getX(),
                 loc.getY(),
                 loc.getZ(),
-                baseConfig.getAdmin().isEnabled(),
+                enabledText(baseConfig.getAdmin().isEnabled()),
                 adminPlayers().size(),
                 MAX_ADMINS,
                 getPlayerConfigs().size(),
@@ -964,61 +917,61 @@ public class BackToTheBase implements Plugin {
     }
 
     private List<String> consolePlayerList() {
-        BackToTheBaseLanguage lang = messages();
         List<String> lines = new ArrayList<>();
-        lines.add(lang.playerListHeader());
-        lines.add(lang.playerCount(getPlayerConfigs().size()));
+        lines.add(LangManager.get("backtothebase.player_list.header"));
+        lines.add(LangManager.get("backtothebase.status.player_count", getPlayerConfigs().size()));
         if (getPlayerConfigs().isEmpty()) {
-            lines.add(lang.noPlayersConsole());
+            lines.add(LangManager.get("backtothebase.players.none.console"));
         } else {
-            lines.add(lang.playerDataHeader());
+            lines.add(LangManager.get("backtothebase.status.player_data"));
             for (Map.Entry<String, PlayerBaseConfig> entry : getPlayerConfigs().entrySet()) {
-                lines.add(lang.playerLocationData(entry.getKey(), locationNumbers(entry.getValue())));
+                lines.add(LangManager.get("backtothebase.player.location_data", entry.getKey(), locationNumbers(entry.getValue())));
             }
         }
-        lines.add(lang.divider());
+        lines.add(LangManager.get("backtothebase.divider"));
         return lines;
     }
 
     private String gamePlayerList() {
-        BackToTheBaseLanguage lang = messages();
         if (getPlayerConfigs().isEmpty()) {
-            return lang.noPlayers();
+            return LangManager.get("backtothebase.players.none");
         }
         List<String> parts = new ArrayList<>();
         for (Map.Entry<String, PlayerBaseConfig> entry : getPlayerConfigs().entrySet()) {
-            parts.add(lang.gamePlayerEntry(entry.getKey(), locationNumbers(entry.getValue())));
+            parts.add(LangManager.get("backtothebase.player_list.entry", entry.getKey(), locationNumbers(entry.getValue())));
         }
-        return lang.gamePlayerList(String.join("; ", parts));
+        return LangManager.get("backtothebase.player_list.game", String.join("; ", parts));
     }
 
     private List<String> consoleLocList(String playerName) {
-        BackToTheBaseLanguage lang = messages();
         PlayerBaseConfig config = getPlayerConfigs().get(playerName);
         if (config == null) {
-            return List.of(lang.playerMissing(playerName));
+            return List.of(LangManager.get("backtothebase.player.missing", playerName));
         }
         List<String> lines = new ArrayList<>();
-        lines.add(lang.locationListHeader(playerName));
-        lines.add(lang.locationCount(safeLocations(config).size()));
+        lines.add(LangManager.get("backtothebase.location_list.header", playerName));
+        lines.add(LangManager.get("backtothebase.status.location_count", safeLocations(config).size()));
         for (ButtonLocation location : safeLocations(config)) {
-            lines.add(lang.locationLine(location.getNumber(), location.getX(), location.getY(), location.getZ()));
+            lines.add(LangManager.get("backtothebase.location_list.line", location.getNumber(), location.getX(), location.getY(), location.getZ()));
         }
-        lines.add(lang.divider());
+        lines.add(LangManager.get("backtothebase.divider"));
         return lines;
     }
 
     private String gameLocList(String playerName) {
-        BackToTheBaseLanguage lang = messages();
         PlayerBaseConfig config = getPlayerConfigs().get(playerName);
         if (config == null) {
-            return lang.playerMissing(playerName);
+            return LangManager.get("backtothebase.player.missing", playerName);
         }
         List<String> parts = new ArrayList<>();
         for (ButtonLocation location : safeLocations(config)) {
             parts.add(location.getNumber() + "=" + location.getX() + " " + location.getY() + " " + location.getZ());
         }
-        return lang.gameLocationList(playerName, String.join("; ", parts));
+        return LangManager.get("backtothebase.location_list.game", playerName, String.join("; ", parts));
+    }
+
+    private String enabledText(boolean enabled) {
+        return LangManager.get(enabled ? "backtothebase.enabled" : "backtothebase.disabled");
     }
 
     private boolean setLocation(PlayerBaseConfig config, ButtonLocation replacement) {
@@ -1134,7 +1087,6 @@ public class BackToTheBase implements Plugin {
             return switch (root) {
                 case "returnenable" -> args.length == 2 ? filter(List.of("true", "false"), args[1]) : List.of();
                 case "adminenable" -> args.length == 2 ? filter(List.of("true", "false"), args[1]) : List.of();
-                case "lang" -> args.length == 2 ? filter(List.of(BackToTheBaseLanguage.ENGLISH, BackToTheBaseLanguage.CHINESE), args[1]) : List.of();
                 case "player" -> completePlayer(args);
                 case "loc" -> completeLoc(args);
                 case "admin" -> completeAdmin(args);
@@ -1150,7 +1102,7 @@ public class BackToTheBase implements Plugin {
         }
 
         private List<String> rootSuggestions(String prefix) {
-            return filter(List.of("stat", "confirm", "lang", "returnenable", "returnpoint", "player", "loc", "admin", "adminenable"), prefix);
+            return filter(List.of("stat", "confirm", "returnenable", "returnpoint", "player", "loc", "admin", "adminenable"), prefix);
         }
 
         private List<String> completePlayer(String[] args) {

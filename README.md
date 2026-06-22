@@ -54,8 +54,6 @@ Use the command name `backtothebase` or the short alias `bttb`. The prefixed for
 | `backtothebase returnpoint <x> <y> <z>` | Set the return location. |
 | `backtothebase admin add\|remove <player>` | Manage in-game admins. |
 | `backtothebase adminenable true\|false` | Enable or disable in-game admin commands. |
-| `backtothebase lang English` | Switch command output to English. |
-| `backtothebase lang Chinese` | Switch command output to Chinese. |
 | `backtothebase confirm` | Confirm a pending remove action. |
 
 ## In-game Admin Commands
@@ -67,7 +65,7 @@ When enabled, admins can private message the bot with:
 /msg account_name @bttb <command>
 ```
 
-**Most console commands are supported, except admin management commands such as `admin` and `adminenable`. Language switching with `lang` is also console-only.**
+**Most console commands are supported, except admin management commands such as `admin` and `adminenable`.**
 
 ## Configuration
 
@@ -75,7 +73,6 @@ Example `base_config.json`:
 
 ```json
 {
-  "language": "English",
   "players": {
     "Steve": {
       "locations": [
@@ -111,9 +108,7 @@ Example `base_config.json`:
 
 Notes:
 
-- `language` controls user-facing command output. Valid values are only `English` and `Chinese`.
-- Missing or invalid `language` defaults to `Chinese`. After the field exists, the config value is used.
-- Command output is loaded through Xinbot `LangManager` from `lang/en_us.lang` and `lang/zh_cn.lang`.
+- Command output is rendered through Xinbot `LangManager`. The language follows the host system locale (a Chinese locale loads `lang/zh_cn.lang`; everything else falls back to `lang/en_us.lang`).
 - `players` maps player names to their button locations.
 - `locations[].number` must be a positive integer string.
 - `x`, `y`, and `z` are the exact block coordinates of the button.

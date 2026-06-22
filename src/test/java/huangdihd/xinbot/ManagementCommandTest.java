@@ -1,8 +1,10 @@
 package huangdihd.xinbot;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import xin.bbtt.mcbot.LangManager;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +19,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ManagementCommandTest {
     private BackToTheBase plugin;
+
+    @BeforeAll
+    static void loadChineseMessages() {
+        // The plugin picks its language from the system locale at runtime; force Chinese
+        // here so the assertions below are deterministic regardless of the host locale.
+        ClassLoader classLoader = ManagementCommandTest.class.getClassLoader();
+        LangManager.loadFromClassLoader(classLoader, "en_us");
+        LangManager.loadFromClassLoader(classLoader, "zh_cn");
+    }
 
     @BeforeEach
     void setUp() throws IOException {

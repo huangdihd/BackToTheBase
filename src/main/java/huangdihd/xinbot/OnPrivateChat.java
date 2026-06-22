@@ -5,6 +5,7 @@ import org.joml.Vector3d;
 import xin.bbtt.Block.BlockState;
 import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
+import xin.bbtt.mcbot.LangManager;
 import xin.bbtt.mcbot.event.EventHandler;
 import xin.bbtt.mcbot.event.Listener;
 import xin.bbtt.mcbot.events.PrivateChatEvent;
@@ -57,28 +58,28 @@ public class OnPrivateChat implements Listener {
         ButtonLocation location = config.getLocation(number);
         if (location == null) {
             BackToTheBase.INSTANCE.getLogger().warn("No pearl button location number {} configured for {}.", number, senderName);
-            sendPrivate(senderName, messages().locationNotConfigured(number));
+            sendPrivate(senderName, LangManager.get("backtothebase.location.not_configured", number));
             return;
         }
 
         if (!Bot.INSTANCE.getPluginManager().isPluginEnabled("MovementSync")) {
             BackToTheBase.INSTANCE.getLogger().warn("MovementSync is not enabled. Cannot run back command.");
-            sendPrivate(senderName, messages().movementSyncDisabled());
+            sendPrivate(senderName, LangManager.get("backtothebase.movementsync.disabled"));
             return;
         }
         if (!(Bot.INSTANCE.getPluginManager().getPlugin("MovementSync").getPlugin() instanceof MovementSync movementSync)) {
             BackToTheBase.INSTANCE.getLogger().error("MovementSync plugin instance is invalid. Cannot run back command.");
-            sendPrivate(senderName, messages().movementSyncInvalid());
+            sendPrivate(senderName, LangManager.get("backtothebase.movementsync.invalid"));
             return;
         }
         if (!acquireBackAction(senderName)) {
             BackToTheBase.INSTANCE.getLogger().warn("Ignoring back command from {} because a BackToTheBase action is already running.", senderName);
-            sendPrivate(senderName, messages().actionAlreadyRunning());
+            sendPrivate(senderName, LangManager.get("backtothebase.action.running"));
             return;
         }
 
         BackToTheBase.INSTANCE.getLogger().info("BackToTheBase command from {} selected location number {}.", senderName, number);
-        sendPrivate(senderName, messages().backStarted(number));
+        sendPrivate(senderName, LangManager.get("backtothebase.back.started", number));
         if (!queueButtonAction(movementSync, senderName, location, BackToTheBase.INSTANCE.getBaseConfig().getReturnConfig())) {
             releaseBackAction();
         }
@@ -101,10 +102,6 @@ public class OnPrivateChat implements Listener {
         for (String line : BackToTheBase.INSTANCE.handleManagementCommand(senderName, false, normalizeAdminPrefix(args[0]), commandArgs)) {
             sendPrivate(senderName, line);
         }
-    }
-
-    private BackToTheBaseLanguage messages() {
-        return BackToTheBaseLanguage.of(BackToTheBase.INSTANCE.getBaseConfig().getLanguage());
     }
 
     private String normalizeAdminPrefix(String prefix) {
