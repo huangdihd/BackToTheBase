@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,6 +46,7 @@ class ConfigLoadTest {
         plugin.onLoad();
 
         assertFalse(Files.readString(CONFIG_PATH).contains("\"language\""));
+        assertEquals(Set.of("example_name"), plugin.getPlayerConfigs().keySet());
     }
 
     @Test
