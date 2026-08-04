@@ -43,7 +43,7 @@ public class BackToTheBase implements Plugin {
     public static final String GAME_COMMAND_ALIAS_PREFIX = "@" + COMMAND_ALIAS;
     private static final int MAX_ADMINS = 3;
     private static final String EXAMPLE_PLAYER_NAME = "example_name";
-    static final String CURRENT_VERSION = "1.8.0-RELEASE";
+    static final String CURRENT_VERSION = "1.8.1-RELEASE";
     private static final long PENDING_ACTION_TIMEOUT_MS = 60_000L;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final Map<String, PendingAction> pendingActions = new ConcurrentHashMap<>();
