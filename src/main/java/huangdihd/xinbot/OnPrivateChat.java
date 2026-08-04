@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OnPrivateChat implements Listener {
     private static final long ACTION_TIMEOUT_MS = 30_000L;
+    private static final int MAX_PRIVATE_MESSAGE_LENGTH = 100;
     private static final AtomicBoolean BACK_ACTION_RUNNING = new AtomicBoolean(false);
     private static volatile long backActionStartTime = 0L;
 
@@ -111,7 +112,33 @@ public class OnPrivateChat implements Listener {
     }
 
     private void sendPrivate(String playerName, String message) {
-        Bot.INSTANCE.sendCommand("msg " + playerName + " " + message);
+        for (String part : splitMessage(message)) {
+            Bot.INSTANCE.sendCommand("msg " + playerName + " " + part);
+        }
+    }
+
+    static List<String> splitMessage(String message) {
+        if (message.length() <= MAX_PRIVATE_MESSAGE_LENGTH) {
+            return List.of(message);
+        }
+
+        List<String> parts = new ArrayList<>();
+        String remaining = message;
+        while (remaining.length() > MAX_PRIVATE_MESSAGE_LENGTH) {
+            int split = MAX_PRIVATE_MESSAGE_LENGTH;
+            while (split > 0 && !Character.isWhitespace(remaining.charAt(split))) {
+                split--;
+            }
+            if (split == 0) {
+                split = MAX_PRIVATE_MESSAGE_LENGTH;
+            }
+            parts.add(remaining.substring(0, split));
+            remaining = remaining.substring(split).stripLeading();
+        }
+        if (!remaining.isEmpty()) {
+            parts.add(remaining);
+        }
+        return parts;
     }
 
     private static boolean acquireBackAction(String senderName) {
