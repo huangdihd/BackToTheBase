@@ -2,7 +2,6 @@ backtothebase.unknown_command=[BackToTheBase] 未知命令。
 backtothebase.save_failed=[BackToTheBase] 配置保存失败，请检查日志。
 backtothebase.console_only=[BackToTheBase] 该命令只能在控制台使用。
 backtothebase.usage=[BackToTheBase] 用法: %s
-backtothebase.language.changed=[BackToTheBase] 语言已切换为 %s。
 backtothebase.return.enabled=[BackToTheBase] 已开启返回功能。
 backtothebase.return.disabled=[BackToTheBase] 已关闭返回功能。
 backtothebase.coordinates.integer=[BackToTheBase] 坐标必须是整数。

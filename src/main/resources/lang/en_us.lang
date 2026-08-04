@@ -2,7 +2,6 @@ backtothebase.unknown_command=[BackToTheBase] Unknown command.
 backtothebase.save_failed=[BackToTheBase] Failed to save config. Please check the log.
 backtothebase.console_only=[BackToTheBase] This command can only be used from the console.
 backtothebase.usage=[BackToTheBase] Usage: %s
-backtothebase.language.changed=[BackToTheBase] Language changed to %s.
 backtothebase.return.enabled=[BackToTheBase] Return after use enabled.
 backtothebase.return.disabled=[BackToTheBase] Return after use disabled.
 backtothebase.coordinates.integer=[BackToTheBase] Coordinates must be integers.

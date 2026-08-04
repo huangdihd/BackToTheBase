@@ -41,6 +41,27 @@ class ConfigLoadTest {
     }
 
     @Test
+    void defaultConfigDoesNotContainLanguageSetting() throws IOException {
+        plugin.onLoad();
+
+        assertFalse(Files.readString(CONFIG_PATH).contains("\"language\""));
+    }
+
+    @Test
+    void legacyLanguageSettingIsIgnored() throws IOException {
+        writeConfig("""
+                {
+                  "language": "Chinese",
+                  "Steve": {"x": 100, "y": 64, "z": 200}
+                }
+                """);
+
+        assertTrue(plugin.reloadConfig());
+        assertTrue(plugin.getPlayerConfigs().containsKey("Steve"));
+        assertFalse(plugin.getPlayerConfigs().containsKey("language"));
+    }
+
+    @Test
     void readmeFormatLoadsPlayersReturnAndAdmin() throws IOException {
         writeConfig("""
                 {
