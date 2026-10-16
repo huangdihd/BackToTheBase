@@ -14,7 +14,7 @@ A Xinbot plugin that presses a configured ender pearl button for a player and op
 
 ## Installation
 
-1. Install [MovementSync](https://github.com/huangdihd/MovementSync).
+1. Install [MovementSync 1.11.0-RELEASE](https://github.com/huangdihd/MovementSync/releases/tag/1.11.0-RELEASE). This SNAPSHOT targets that version and does not support older MovementSync releases.
 2. Put the BackToTheBase JAR in the Xinbot `plugins` folder.
 3. Start Xinbot once to generate `base_config.json`.
 4. Edit `base_config.json`.

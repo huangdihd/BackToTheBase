@@ -12,15 +12,19 @@ import xin.bbtt.mcbot.events.PrivateChatEvent;
 import xin.bbtt.movement.Movement;
 
 import xin.bbtt.movements.PathMovement;
+import xin.bbtt.pathfinding.BuiltinMovementType;
 import xin.bbtt.pathfinding.DStarLite;
 import xin.bbtt.pathfinding.Node;
+import xin.bbtt.pathfinding.PathStep;
 import xin.bbtt.pathfinding.PathfindingContext;
 import xin.bbtt.pathfinding.PathfindingContextBuilder;
+import xin.bbtt.pathfinding.StandablePositionResolver;
 import xin.bbtt.world.World;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OnPrivateChat implements Listener {
@@ -189,7 +193,7 @@ public class OnPrivateChat implements Listener {
 
         Vector3d currentPos = MovementSync.INSTANCE.position.get();
         if (!canClickFrom(world, currentPos, target.hitPosition())) {
-            Node start = new Node((int)Math.floor(currentPos.x), (int)Math.floor(currentPos.y), (int)Math.floor(currentPos.z));
+            Node start = new Node((int)Math.floor(currentPos.x), StandablePositionResolver.nodeY(currentPos.y), (int)Math.floor(currentPos.z));
             PathSelection selection = findReachableStandingPath(world, positionInt, target.hitPosition(), currentPos, start);
             if (selection == null) {
                 BackToTheBase.INSTANCE.getLogger().error("Could not find a reachable safe block to stand on near the button.");
@@ -269,7 +273,7 @@ public class OnPrivateChat implements Listener {
     private static PathSelection findReachableStandingPath(World world, org.cloudburstmc.math.vector.Vector3i positionInt, Vector3d hitPosition, Vector3d currentPos, Node start) {
         List<StandingCandidate> candidates = findStandingCandidates(world, positionInt, hitPosition, currentPos);
         for (StandingCandidate candidate : candidates) {
-            List<Node> path = findPath(start, candidate.node());
+            List<PathStep> path = findPath(start, candidate.node());
             if (path != null) {
                 return new PathSelection(candidate.node(), path);
             }
@@ -279,7 +283,7 @@ public class OnPrivateChat implements Listener {
 
     private static List<StandingCandidate> findStandingCandidates(World world, org.cloudburstmc.math.vector.Vector3i positionInt, Vector3d hitPosition, Vector3d currentPos) {
         List<StandingCandidate> candidates = new ArrayList<>();
-        int currentY = (int) Math.floor(currentPos.y);
+        int currentY = StandablePositionResolver.nodeY(currentPos.y);
         int minY = Math.min(currentY, positionInt.getY()) - 2;
         int maxY = Math.max(currentY, positionInt.getY()) + 2;
 
@@ -290,15 +294,14 @@ public class OnPrivateChat implements Listener {
                     int cz = positionInt.getZ() + dz;
                     int dy = y - positionInt.getY();
 
-                    if (!isSolid(world, cx, y - 1, cz)) continue;
-                    if (!isPassable(world, cx, y, cz)) continue;
-                    if (!isPassable(world, cx, y + 1, cz)) continue;
+                    OptionalDouble feetY = StandablePositionResolver.feetY(world, cx, y, cz);
+                    if (feetY.isEmpty()) continue;
 
                     double distToButtonSq = dx * dx + dy * dy + dz * dz;
                     if (distToButtonSq >= 1 && distToButtonSq <= 12) {
-                        Vector3d standEyePos = new Vector3d(cx + 0.5, y + 1.62, cz + 0.5);
-                        if (world.canSee(standEyePos, hitPosition)) {
-                            double distToBotSq = Math.pow(cx - currentPos.x, 2) + Math.pow(y - currentPos.y, 2) + Math.pow(cz - currentPos.z, 2);
+                        Vector3d standPos = new Vector3d(cx + 0.5, feetY.getAsDouble(), cz + 0.5);
+                        if (canClickFrom(world, standPos, hitPosition)) {
+                            double distToBotSq = standPos.distanceSquared(currentPos);
                             candidates.add(new StandingCandidate(new Node(cx, y, cz), distToBotSq));
                         }
                     }
@@ -309,18 +312,8 @@ public class OnPrivateChat implements Listener {
         return candidates;
     }
 
-    private static boolean isSolid(World world, int x, int y, int z) {
-        BlockState blockState = world.getBlockStateAt(new Vector3d(x, y, z));
-        return blockState != null && blockState.isSolid();
-    }
-
-    private static boolean isPassable(World world, int x, int y, int z) {
-        BlockState blockState = world.getBlockStateAt(new Vector3d(x, y, z));
-        return blockState != null && blockState.isPassable();
-    }
-
     private static boolean pathTo(Node start, Node goal) {
-        List<Node> path = findPath(start, goal);
+        List<PathStep> path = findPath(start, goal);
 
         if (path != null) {
             queuePath(start, goal, path);
@@ -330,19 +323,19 @@ public class OnPrivateChat implements Listener {
         return false;
     }
 
-    private static List<Node> findPath(Node start, Node goal) {
+    private static List<PathStep> findPath(Node start, Node goal) {
         if (start.equals(goal)) {
-            return List.of(start);
+            return List.of(new PathStep(start, BuiltinMovementType.WALK));
         }
         DStarLite pathfinder = new DStarLite(start, goal, createPathfindingContext());
-        List<Node> path = pathfinder.findPath(5000);
+        List<PathStep> path = pathfinder.findPath(5000);
         if (path != null && path.size() > 1) {
             return path;
         }
         return null;
     }
 
-    private static void queuePath(Node start, Node goal, List<Node> path) {
+    private static void queuePath(Node start, Node goal, List<PathStep> path) {
         MovementSync.INSTANCE.setActiveGoal(new org.joml.Vector3i(goal.x, goal.y, goal.z));
         if (!start.equals(goal) && path != null && path.size() > 1) {
             MovementSync.INSTANCE.getMovementController().addMovement(new PathMovement(path));
@@ -365,7 +358,7 @@ public class OnPrivateChat implements Listener {
     private record StandingCandidate(Node node, double distToBotSq) {
     }
 
-    private record PathSelection(Node goal, List<Node> path) {
+    private record PathSelection(Node goal, List<PathStep> path) {
     }
 
     private static class PrepareButtonClickMovement extends Movement {
@@ -461,7 +454,7 @@ public class OnPrivateChat implements Listener {
 
         @Override
         public long getTime() {
-            return 50;
+            return -1;
         }
 
         @Override
@@ -491,7 +484,7 @@ public class OnPrivateChat implements Listener {
 
                 Node goal = new Node(returnLocation.getX(), returnLocation.getY(), returnLocation.getZ());
                 Vector3d currentPos = MovementSync.INSTANCE.position.get();
-                Node start = new Node((int)Math.floor(currentPos.x), (int)Math.floor(currentPos.y), (int)Math.floor(currentPos.z));
+                Node start = new Node((int)Math.floor(currentPos.x), StandablePositionResolver.nodeY(currentPos.y), (int)Math.floor(currentPos.z));
                 BackToTheBase.INSTANCE.getLogger().info("Starting return to {} {} {} for {}.", goal.x, goal.y, goal.z, playerName);
                 if (!pathTo(start, goal)) {
                     releaseBackAction();

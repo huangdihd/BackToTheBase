@@ -14,7 +14,7 @@
 
 ## 安装
 
-1. 安装前置插件 [MovementSync](https://github.com/huangdihd/MovementSync)。
+1. 安装前置插件 [MovementSync 1.11.0-RELEASE](https://github.com/huangdihd/MovementSync/releases/tag/1.11.0-RELEASE)。本 SNAPSHOT 针对此版本适配，不支持旧版 MovementSync。
 2. 将 BackToTheBase JAR 放入 Xinbot 的 `plugins` 文件夹。
 3. 启动一次 Xinbot，生成 `base_config.json`。
 4. 编辑 `base_config.json`。
