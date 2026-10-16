@@ -58,5 +58,7 @@ backtothebase.enabled=启用
 backtothebase.disabled=禁用
 backtothebase.movementsync.disabled=[BackToTheBase] MovementSync 未启用，无法执行 back 命令。
 backtothebase.movementsync.invalid=[BackToTheBase] MovementSync 插件实例异常，无法执行 back 命令。
+backtothebase.movementsync.busy=[BackToTheBase] 当前有移动、跟随或暂停中的任务，请先结束当前任务再使用 back。
+backtothebase.back.failed=[BackToTheBase] 无法到达按钮，请检查目标坐标、路径及日志后重试。
 backtothebase.action.running=[BackToTheBase] 已有拉珍珠任务正在运行。
 backtothebase.back.started=[BackToTheBase] 正在拉动珍珠坐标 %s。

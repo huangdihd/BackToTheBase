@@ -58,5 +58,7 @@ backtothebase.enabled=enabled
 backtothebase.disabled=disabled
 backtothebase.movementsync.disabled=[BackToTheBase] MovementSync is not enabled. Cannot run back.
 backtothebase.movementsync.invalid=[BackToTheBase] MovementSync plugin instance is invalid. Cannot run back.
+backtothebase.movementsync.busy=[BackToTheBase] MovementSync is busy or paused. Stop or finish its current action first.
+backtothebase.back.failed=[BackToTheBase] Could not reach the button. Check the target, route and log, then retry.
 backtothebase.action.running=[BackToTheBase] A BackToTheBase action is already running.
 backtothebase.back.started=[BackToTheBase] Pulling pearl button location %s.

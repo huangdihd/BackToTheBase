@@ -139,5 +139,6 @@ mvn clean package
 
 ## Implementation Notes
 
-- When a BackToTheBase action times out, the plugin calls MovementSync `cancelAll()` to release stale movement state. This may cancel other queued MovementSync movements because MovementSync does not currently provide a plugin-scoped cancel API.
+- If MovementSync is moving, following, or paused, `back` reports that it is busy. Retry once it is idle.
+- Each `back` tracks its own movements. If a later command finds that the previous action is over 30 seconds old, it invalidates that action while preserving other queued movements. Disabling or unloading the plugin also invalidates its unfinished actions.
 - UseItemOnMovement sends a rotation packet before UseItemOnPacket so the server-side interaction is aimed at the button hit position. The click is delayed to a later movement tick to avoid sending rotation and interaction in the same tick.

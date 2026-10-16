@@ -89,7 +89,7 @@ public class BackToTheBase implements Plugin {
 
     @Override
     public void onUnload() {
-
+        OnPrivateChat.cancelActiveAction();
     }
 
     @Override
@@ -105,7 +105,7 @@ public class BackToTheBase implements Plugin {
 
     @Override
     public void onDisable() {
-
+        OnPrivateChat.cancelActiveAction();
     }
 
     private void writeDefaultConfig(File configFile) throws IOException {

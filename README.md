@@ -139,5 +139,6 @@ mvn clean package
 
 ## 更多说明
 
-- 当 BackToTheBase 任务超时时，插件会调用 MovementSync 的 `cancelAll()` 来清理过期移动状态。由于 MovementSync 目前没有按插件范围取消移动的 API，这可能会取消其他排队中的 MovementSync 移动。
+- MovementSync 正在移动、跟随或暂停时，`back` 会提示忙碌，请在其空闲后重试。
+- 每次 `back` 独立跟踪自己的动作。再次执行命令发现上次任务超过 30 秒时，会使旧任务失效，保留其他排队中的移动；插件禁用或卸载时也会使自己的未完成动作失效。
 - UseItemOnMovement 会先发送旋转包，再发送 UseItemOnPacket，这样服务端交互会瞄准按钮点击位置。点击会延迟到后续 movement tick 执行，避免旋转和交互在同一 tick 内发送。
