@@ -12,21 +12,25 @@ import xin.bbtt.mcbot.events.PrivateChatEvent;
 import xin.bbtt.movement.Movement;
 
 import xin.bbtt.movements.PathMovement;
+import xin.bbtt.pathfinding.BuiltinMovementType;
 import xin.bbtt.pathfinding.DStarLite;
 import xin.bbtt.pathfinding.Node;
+import xin.bbtt.pathfinding.PathStep;
 import xin.bbtt.pathfinding.PathfindingContext;
 import xin.bbtt.pathfinding.PathfindingContextBuilder;
+import xin.bbtt.pathfinding.StandablePositionResolver;
 import xin.bbtt.world.World;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.OptionalDouble;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class OnPrivateChat implements Listener {
     private static final long ACTION_TIMEOUT_MS = 30_000L;
-    private static final AtomicBoolean BACK_ACTION_RUNNING = new AtomicBoolean(false);
-    private static volatile long backActionStartTime = 0L;
+    private static final int MAX_PRIVATE_MESSAGE_LENGTH = 100;
+    private static final AtomicReference<BackAction> BACK_ACTION = new AtomicReference<>();
 
     @EventHandler
     public void onBack(PrivateChatEvent event) {
@@ -72,16 +76,21 @@ public class OnPrivateChat implements Listener {
             sendPrivate(senderName, LangManager.get("backtothebase.movementsync.invalid"));
             return;
         }
-        if (!acquireBackAction(senderName)) {
-            BackToTheBase.INSTANCE.getLogger().warn("Ignoring back command from {} because a BackToTheBase action is already running.", senderName);
-            sendPrivate(senderName, LangManager.get("backtothebase.action.running"));
+        BackAction action = acquireBackAction(movementSync);
+        if (action == null) {
+            sendPrivate(senderName, LangManager.get("backtothebase.movementsync.busy"));
             return;
         }
 
-        BackToTheBase.INSTANCE.getLogger().info("BackToTheBase command from {} selected location number {}.", senderName, number);
-        sendPrivate(senderName, LangManager.get("backtothebase.back.started", number));
-        if (!queueButtonAction(movementSync, senderName, location, BackToTheBase.INSTANCE.getBaseConfig().getReturnConfig())) {
-            releaseBackAction();
+        boolean handedOff = false;
+        try {
+            BackToTheBase.INSTANCE.getLogger().info("BackToTheBase command from {} selected location number {}.", senderName, number);
+            handedOff = queueButtonAction(action, senderName, location, BackToTheBase.INSTANCE.getBaseConfig().getReturnConfig());
+            sendPrivate(senderName, LangManager.get(handedOff ? "backtothebase.back.started" : "backtothebase.back.failed", number));
+        } catch (RuntimeException e) {
+            BackToTheBase.INSTANCE.getLogger().error("Failed to start BackToTheBase action for {}.", senderName, e);
+        } finally {
+            if (!handedOff) cancelBackAction(action);
         }
     }
 
@@ -111,30 +120,113 @@ public class OnPrivateChat implements Listener {
     }
 
     private void sendPrivate(String playerName, String message) {
-        Bot.INSTANCE.sendCommand("msg " + playerName + " " + message);
+        for (String part : splitMessage(message)) {
+            Bot.INSTANCE.sendCommand("msg " + playerName + " " + part);
+        }
     }
 
-    private static boolean acquireBackAction(String senderName) {
-        long now = System.currentTimeMillis();
-        if (BACK_ACTION_RUNNING.get() && backActionStartTime > 0L && now - backActionStartTime > ACTION_TIMEOUT_MS) {
-            BackToTheBase.INSTANCE.getLogger().warn("BackToTheBase action timed out. Releasing stale action lock before handling command from {}.", senderName);
-            try {
-                MovementSync.INSTANCE.getMovementController().cancelAll();
-            } catch (Exception e) {
-                BackToTheBase.INSTANCE.getLogger().warn("Failed to cancel stale MovementSync movements after BackToTheBase timeout.", e);
+    static List<String> splitMessage(String message) {
+        if (message.length() <= MAX_PRIVATE_MESSAGE_LENGTH) {
+            return List.of(message);
+        }
+
+        List<String> parts = new ArrayList<>();
+        String remaining = message;
+        while (remaining.length() > MAX_PRIVATE_MESSAGE_LENGTH) {
+            int split = MAX_PRIVATE_MESSAGE_LENGTH;
+            while (split > 0 && !Character.isWhitespace(remaining.charAt(split))) {
+                split--;
             }
-            releaseBackAction();
+            if (split == 0) {
+                split = MAX_PRIVATE_MESSAGE_LENGTH;
+            }
+            parts.add(remaining.substring(0, split));
+            remaining = remaining.substring(split).stripLeading();
         }
-        if (!BACK_ACTION_RUNNING.compareAndSet(false, true)) {
-            return false;
+        if (!remaining.isEmpty()) {
+            parts.add(remaining);
         }
-        backActionStartTime = now;
+        return parts;
+    }
+
+    private static BackAction acquireBackAction(MovementSync movementSync) {
+        long now = System.currentTimeMillis();
+        BackAction previous = BACK_ACTION.get();
+        if (previous != null) {
+            if ((previous.queued && (!isCurrentAction(previous) || movementsEmpty(previous.movementSync)))
+                    || now - previous.startedAt > ACTION_TIMEOUT_MS) {
+                cancelBackAction(previous);
+            } else {
+                return null;
+            }
+        }
+        if (movementSync != MovementSync.INSTANCE || movementBusy(movementSync)) return null;
+        BackAction action = new BackAction(movementSync, now);
+        return BACK_ACTION.compareAndSet(null, action) ? action : null;
+    }
+
+    private static boolean movementsEmpty(MovementSync movementSync) {
+        return movementSync.getMovementController().getCurrentMovement() == null
+                && movementSync.getMovementController().getMovements().isEmpty()
+                && movementSync.getMovementController().getCurrentMovement() == null;
+    }
+
+    private static boolean movementBusy(MovementSync movementSync) {
+        return movementSync.getMovementController().isPaused()
+                || movementSync.getFollowTargetId() != -1 || !movementsEmpty(movementSync);
+    }
+
+    private static boolean isCurrentAction(BackAction action) {
+        return BACK_ACTION.get() == action && action.movementSync == MovementSync.INSTANCE
+                && action.movementSync.isNavigationRequestCurrent(action.generation);
+    }
+
+    private static void releaseBackAction(BackAction action) {
+        BACK_ACTION.compareAndSet(action, null);
+    }
+
+    // Called outside movement callbacks; their init/onStop run under the controller lock.
+    static void cancelActiveAction() {
+        BackAction action = BACK_ACTION.get();
+        if (action != null) cancelBackAction(action);
+    }
+
+    private static void cancelBackAction(BackAction action) {
+        long generation;
+        do {
+            generation = action.generation;
+            if (action.movementSync.runIfNavigationRequestCurrent(generation, () -> {
+                releaseBackAction(action);
+                // Wait for an in-flight init before clearing any goal it may have published.
+                action.movementSync.getMovementController().getCurrentMovement();
+                if (action.goal != null && action.goal.equals(action.movementSync.getActiveGoal())
+                        && action.movementSync.getFollowTargetId() == -1) {
+                    action.movementSync.setActiveGoal(null);
+                }
+            })) return;
+            // Initial publication may have reserved a new generation while cancellation waited.
+        } while (generation != action.generation);
+        releaseBackAction(action); // A superseded generation cannot send another click.
+    }
+
+    private static boolean queueMovement(BackAction action, Movement movement) {
+        if (!isCurrentAction(action)) return false;
+        action.movementSync.getMovementController().addMovement(movement);
         return true;
     }
 
-    private static void releaseBackAction() {
-        BACK_ACTION_RUNNING.set(false);
-        backActionStartTime = 0L;
+    private static class BackAction {
+        private final MovementSync movementSync;
+        private final long startedAt;
+        private volatile long generation;
+        private volatile boolean queued;
+        private volatile org.joml.Vector3i goal;
+
+        private BackAction(MovementSync movementSync, long startedAt) {
+            this.movementSync = movementSync;
+            this.startedAt = startedAt;
+            this.generation = movementSync.getNavigationGeneration();
+        }
     }
 
     private String parseRequestedNumber(String senderName, String[] args) {
@@ -152,23 +244,24 @@ public class OnPrivateChat implements Listener {
         return value != null && value.matches("[1-9][0-9]*");
     }
 
-    private boolean queueButtonAction(MovementSync movementSync, String playerName, ButtonLocation location, PlayerBaseConfig.ReturnConfig returnConfig) {
+    private boolean queueButtonAction(BackAction action, String playerName, ButtonLocation location, PlayerBaseConfig.ReturnConfig returnConfig) {
+        MovementSync movementSync = action.movementSync;
         org.cloudburstmc.math.vector.Vector3i positionInt = location.toVector3i();
-        World world = MovementSync.INSTANCE.getWorld();
+        World world = movementSync.getWorld();
         ButtonTarget target = getButtonTarget(world, positionInt);
         if (target == null) {
             return false;
         }
 
-        Vector3d currentPos = MovementSync.INSTANCE.position.get();
+        Vector3d currentPos = movementSync.position.get();
+        Node start = new Node((int)Math.floor(currentPos.x), StandablePositionResolver.nodeY(currentPos.y), (int)Math.floor(currentPos.z));
+        PathSelection selection = null;
         if (!canClickFrom(world, currentPos, target.hitPosition())) {
-            Node start = new Node((int)Math.floor(currentPos.x), (int)Math.floor(currentPos.y), (int)Math.floor(currentPos.z));
-            PathSelection selection = findReachableStandingPath(world, positionInt, target.hitPosition(), currentPos, start);
+            selection = findReachableStandingPath(world, positionInt, target.hitPosition(), currentPos, start);
             if (selection == null) {
                 BackToTheBase.INSTANCE.getLogger().error("Could not find a reachable safe block to stand on near the button.");
                 return false;
             }
-            queuePath(start, selection.goal(), selection.path());
             BackToTheBase.INSTANCE.getLogger().info(
                     "Starting walk to pearl button location {} for {} at {} {} {}.",
                     location.getNumber(),
@@ -179,8 +272,19 @@ public class OnPrivateChat implements Listener {
             );
         }
 
-        movementSync.getMovementController().addMovement(new PrepareButtonClickMovement(playerName, location, returnConfig));
-        return true;
+        PathSelection selected = selection;
+        boolean[] handedOff = {false};
+        movementSync.runIfNavigationRequestCurrent(action.generation, () -> {
+            if (!isCurrentAction(action) || movementBusy(movementSync)) return;
+            // Reserve the idle navigator so an older, still-planning request cannot publish later.
+            action.generation = movementSync.beginNavigationRequest();
+            movementSync.setActiveGoal(null);
+            if (selected != null && !queuePath(action, selected.goal(), selected.path())) return;
+            handedOff[0] = queueMovement(action, new PrepareButtonClickMovement(action, playerName, location, returnConfig))
+                    && isCurrentAction(action);
+            action.queued = handedOff[0];
+        });
+        return handedOff[0];
     }
 
     private static ButtonTarget getButtonTarget(World world, org.cloudburstmc.math.vector.Vector3i positionInt) {
@@ -242,8 +346,8 @@ public class OnPrivateChat implements Listener {
     private static PathSelection findReachableStandingPath(World world, org.cloudburstmc.math.vector.Vector3i positionInt, Vector3d hitPosition, Vector3d currentPos, Node start) {
         List<StandingCandidate> candidates = findStandingCandidates(world, positionInt, hitPosition, currentPos);
         for (StandingCandidate candidate : candidates) {
-            List<Node> path = findPath(start, candidate.node());
-            if (path != null) {
+            List<PathStep> path = findPath(start, candidate.node());
+            if (path != null && candidate.node().equals(path.get(path.size() - 1).getNode())) {
                 return new PathSelection(candidate.node(), path);
             }
         }
@@ -252,28 +356,24 @@ public class OnPrivateChat implements Listener {
 
     private static List<StandingCandidate> findStandingCandidates(World world, org.cloudburstmc.math.vector.Vector3i positionInt, Vector3d hitPosition, Vector3d currentPos) {
         List<StandingCandidate> candidates = new ArrayList<>();
-        int currentY = (int) Math.floor(currentPos.y);
-        int minY = Math.min(currentY, positionInt.getY()) - 2;
-        int maxY = Math.max(currentY, positionInt.getY()) + 2;
-
-        for (int y = minY; y <= maxY; y++) {
+        for (int dy = -3; dy <= 3; dy++) {
+            long candidateY = (long) positionInt.getY() + dy;
+            if (candidateY < Integer.MIN_VALUE || candidateY > Integer.MAX_VALUE) continue;
+            int y = (int) candidateY;
             for (int dx = -3; dx <= 3; dx++) {
                 for (int dz = -3; dz <= 3; dz++) {
+                    int distToButtonSq = dx * dx + dy * dy + dz * dz;
+                    if (distToButtonSq < 1 || distToButtonSq > 12) continue;
                     int cx = positionInt.getX() + dx;
                     int cz = positionInt.getZ() + dz;
-                    int dy = y - positionInt.getY();
 
-                    if (!isSolid(world, cx, y - 1, cz)) continue;
-                    if (!isPassable(world, cx, y, cz)) continue;
-                    if (!isPassable(world, cx, y + 1, cz)) continue;
+                    OptionalDouble feetY = StandablePositionResolver.feetY(world, cx, y, cz);
+                    if (feetY.isEmpty()) continue;
 
-                    double distToButtonSq = dx * dx + dy * dy + dz * dz;
-                    if (distToButtonSq >= 1 && distToButtonSq <= 12) {
-                        Vector3d standEyePos = new Vector3d(cx + 0.5, y + 1.62, cz + 0.5);
-                        if (world.canSee(standEyePos, hitPosition)) {
-                            double distToBotSq = Math.pow(cx - currentPos.x, 2) + Math.pow(y - currentPos.y, 2) + Math.pow(cz - currentPos.z, 2);
-                            candidates.add(new StandingCandidate(new Node(cx, y, cz), distToBotSq));
-                        }
+                    Vector3d standPos = new Vector3d(cx + 0.5, feetY.getAsDouble(), cz + 0.5);
+                    if (canClickFrom(world, standPos, hitPosition)) {
+                        double distToBotSq = standPos.distanceSquared(currentPos);
+                        candidates.add(new StandingCandidate(new Node(cx, y, cz), distToBotSq));
                     }
                 }
             }
@@ -282,44 +382,48 @@ public class OnPrivateChat implements Listener {
         return candidates;
     }
 
-    private static boolean isSolid(World world, int x, int y, int z) {
-        BlockState blockState = world.getBlockStateAt(new Vector3d(x, y, z));
-        return blockState != null && blockState.isSolid();
-    }
-
-    private static boolean isPassable(World world, int x, int y, int z) {
-        BlockState blockState = world.getBlockStateAt(new Vector3d(x, y, z));
-        return blockState != null && blockState.isPassable();
-    }
-
-    private static boolean pathTo(Node start, Node goal) {
-        List<Node> path = findPath(start, goal);
+    private static boolean pathTo(BackAction action, Node start, Node goal) {
+        List<PathStep> path = findPath(start, goal);
 
         if (path != null) {
-            queuePath(start, goal, path);
-            return true;
+            return queuePath(action, goal, path);
         }
         BackToTheBase.INSTANCE.getLogger().error("Could not find a path to target {} {} {}.", goal.x, goal.y, goal.z);
         return false;
     }
 
-    private static List<Node> findPath(Node start, Node goal) {
+    private static List<PathStep> findPath(Node start, Node goal) {
         if (start.equals(goal)) {
-            return List.of(start);
+            return List.of(new PathStep(start, BuiltinMovementType.WALK));
         }
         DStarLite pathfinder = new DStarLite(start, goal, createPathfindingContext());
-        List<Node> path = pathfinder.findPath(5000);
+        List<PathStep> path = pathfinder.findPath(5000);
         if (path != null && path.size() > 1) {
             return path;
         }
         return null;
     }
 
-    private static void queuePath(Node start, Node goal, List<Node> path) {
-        MovementSync.INSTANCE.setActiveGoal(new org.joml.Vector3i(goal.x, goal.y, goal.z));
-        if (!start.equals(goal) && path != null && path.size() > 1) {
-            MovementSync.INSTANCE.getMovementController().addMovement(new PathMovement(path));
-        }
+    private static boolean queuePath(BackAction action, Node goal, List<PathStep> path) {
+        if (!isCurrentAction(action) || path == null || path.isEmpty()) return false;
+        action.goal = new org.joml.Vector3i(goal.x, goal.y, goal.z);
+        action.movementSync.setActiveGoal(action.goal);
+        return queueMovement(action, new PathMovement(path) {
+            @Override
+            public void onTick() {
+                if (isCurrentAction(action)) super.onTick();
+                else setFinished(true);
+            }
+
+            @Override
+            public void onStop() {
+                super.onStop();
+                if (!isCurrentAction(action) && action.movementSync.isNavigationRequestCurrent(action.generation)
+                        && action.goal.equals(action.movementSync.getActiveGoal())) {
+                    action.movementSync.setActiveGoal(null);
+                }
+            }
+        });
     }
 
     private static PathfindingContext createPathfindingContext() {
@@ -338,16 +442,18 @@ public class OnPrivateChat implements Listener {
     private record StandingCandidate(Node node, double distToBotSq) {
     }
 
-    private record PathSelection(Node goal, List<Node> path) {
+    private record PathSelection(Node goal, List<PathStep> path) {
     }
 
     private static class PrepareButtonClickMovement extends Movement {
+        private final BackAction action;
         private final String playerName;
         private final ButtonLocation location;
         private final PlayerBaseConfig.ReturnConfig returnConfig;
         private boolean handedOff;
 
-        private PrepareButtonClickMovement(String playerName, ButtonLocation location, PlayerBaseConfig.ReturnConfig returnConfig) {
+        private PrepareButtonClickMovement(BackAction action, String playerName, ButtonLocation location, PlayerBaseConfig.ReturnConfig returnConfig) {
+            this.action = action;
             this.playerName = playerName;
             this.location = location;
             this.returnConfig = returnConfig;
@@ -356,14 +462,13 @@ public class OnPrivateChat implements Listener {
         @Override
         public void init() {
             try {
-                ButtonTarget target = getButtonTarget(MovementSync.INSTANCE.getWorld(), location.toVector3i());
+                if (!isCurrentAction(action)) return;
+                ButtonTarget target = getButtonTarget(action.movementSync.getWorld(), location.toVector3i());
                 if (target == null) {
-                    releaseBackAction();
-                    setFinished(true);
                     return;
                 }
-                Vector3d currentPos = MovementSync.INSTANCE.position.get();
-                if (!canClickFrom(MovementSync.INSTANCE.getWorld(), currentPos, target.hitPosition())) {
+                Vector3d currentPos = action.movementSync.position.get();
+                if (!canClickFrom(action.movementSync.getWorld(), currentPos, target.hitPosition())) {
                     BackToTheBase.INSTANCE.getLogger().warn(
                             "Reached pearl button area for {}, but the button at {} {} {} is still not visible or is too far away.",
                             playerName,
@@ -371,27 +476,43 @@ public class OnPrivateChat implements Listener {
                             location.getY(),
                             location.getZ()
                     );
-                    releaseBackAction();
-                    setFinished(true);
                     return;
                 }
 
-                MovementSync.INSTANCE.getMovementController().addMovement(new UseItemOnMovement(
+                if (!queueMovement(action, new UseItemOnMovement(
                         target.position(),
                         target.direction(),
                         target.hitPosition()
-                ));
+                ) {
+                    @Override
+                    public void onTick() {
+                        if (!action.movementSync.runIfNavigationRequestCurrent(action.generation, () -> {
+                            if (!isCurrentAction(action)) {
+                                setFinished(true);
+                                return;
+                            }
+                            try {
+                                super.onTick();
+                            } catch (RuntimeException e) {
+                                releaseBackAction(action);
+                                throw e;
+                            }
+                        })) setFinished(true);
+                    }
+                })) return;
 
                 BackToTheBase.INSTANCE.getLogger().info("Looking at and clicking pearl button location {} for {}.", location.getNumber(), playerName);
 
                 if (returnConfig.isEnabled()) {
-                    MovementSync.INSTANCE.getMovementController().addMovement(new WaitTicksMovement(3));
-                    MovementSync.INSTANCE.getMovementController().addMovement(new ReturnAfterUseMovement(playerName, returnConfig.getLocation()));
+                    if (!queueMovement(action, new WaitTicksMovement(3))) return;
+                    handedOff = queueMovement(action, new ReturnAfterUseMovement(action, playerName, returnConfig.getLocation()));
                 } else {
-                    MovementSync.INSTANCE.getMovementController().addMovement(new FinishBackActionMovement());
+                    handedOff = queueMovement(action, new FinishBackActionMovement(action));
                 }
-                handedOff = true;
+            } catch (RuntimeException e) {
+                BackToTheBase.INSTANCE.getLogger().error("Failed to prepare pearl button click for {}.", playerName, e);
             } finally {
+                if (!handedOff) releaseBackAction(action);
                 setFinished(true);
             }
         }
@@ -408,7 +529,7 @@ public class OnPrivateChat implements Listener {
         @Override
         public void onStop() {
             if (!handedOff) {
-                releaseBackAction();
+                releaseBackAction(action);
             }
         }
     }
@@ -434,7 +555,7 @@ public class OnPrivateChat implements Listener {
 
         @Override
         public long getTime() {
-            return 50;
+            return -1;
         }
 
         @Override
@@ -443,11 +564,13 @@ public class OnPrivateChat implements Listener {
     }
 
     private static class ReturnAfterUseMovement extends Movement {
+        private final BackAction action;
         private final String playerName;
         private final PlayerBaseConfig.ReturnLocation returnLocation;
         private boolean handedOff;
 
-        private ReturnAfterUseMovement(String playerName, PlayerBaseConfig.ReturnLocation returnLocation) {
+        private ReturnAfterUseMovement(BackAction action, String playerName, PlayerBaseConfig.ReturnLocation returnLocation) {
+            this.action = action;
             this.playerName = playerName;
             this.returnLocation = returnLocation;
         }
@@ -455,24 +578,25 @@ public class OnPrivateChat implements Listener {
         @Override
         public void init() {
             try {
+                if (!isCurrentAction(action)) return;
                 if (returnLocation == null) {
                     BackToTheBase.INSTANCE.getLogger().warn("return.enabled is true, but return.location is missing.");
-                    MovementSync.INSTANCE.getMovementController().addMovement(new FinishBackActionMovement());
-                    handedOff = true;
+                    handedOff = queueMovement(action, new FinishBackActionMovement(action));
                     return;
                 }
 
                 Node goal = new Node(returnLocation.getX(), returnLocation.getY(), returnLocation.getZ());
-                Vector3d currentPos = MovementSync.INSTANCE.position.get();
-                Node start = new Node((int)Math.floor(currentPos.x), (int)Math.floor(currentPos.y), (int)Math.floor(currentPos.z));
+                Vector3d currentPos = action.movementSync.position.get();
+                Node start = new Node((int)Math.floor(currentPos.x), StandablePositionResolver.nodeY(currentPos.y), (int)Math.floor(currentPos.z));
                 BackToTheBase.INSTANCE.getLogger().info("Starting return to {} {} {} for {}.", goal.x, goal.y, goal.z, playerName);
-                if (!pathTo(start, goal)) {
-                    releaseBackAction();
+                if (!pathTo(action, start, goal)) {
                     return;
                 }
-                MovementSync.INSTANCE.getMovementController().addMovement(new FinishBackActionMovement());
-                handedOff = true;
+                handedOff = queueMovement(action, new FinishBackActionMovement(action));
+            } catch (RuntimeException e) {
+                BackToTheBase.INSTANCE.getLogger().error("Failed to prepare return movement for {}.", playerName, e);
             } finally {
+                if (!handedOff) releaseBackAction(action);
                 setFinished(true);
             }
         }
@@ -489,15 +613,21 @@ public class OnPrivateChat implements Listener {
         @Override
         public void onStop() {
             if (!handedOff) {
-                releaseBackAction();
+                releaseBackAction(action);
             }
         }
     }
 
     private static class FinishBackActionMovement extends Movement {
+        private final BackAction action;
+
+        private FinishBackActionMovement(BackAction action) {
+            this.action = action;
+        }
+
         @Override
         public void init() {
-            releaseBackAction();
+            releaseBackAction(action);
             setFinished(true);
         }
 
@@ -512,7 +642,7 @@ public class OnPrivateChat implements Listener {
 
         @Override
         public void onStop() {
-            releaseBackAction();
+            releaseBackAction(action);
         }
     }
 }

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -53,6 +54,11 @@ class ManagementCommandTest {
         return plugin.handleManagementCommand(sender, false, args);
     }
 
+    private void addExamplePlayer() {
+        plugin.getPlayerConfigs().put("example_name", new PlayerBaseConfig(List.of()));
+    }
+
+
     private static String joined(List<String> lines) {
         return String.join("\n", lines);
     }
@@ -86,6 +92,34 @@ class ManagementCommandTest {
 
         assertTrue(joined(console("returnpoint", "a", "b", "c")).contains("必须是整数"));
         assertTrue(joined(console("returnpoint", "1", "2")).contains("用法"));
+    }
+
+    @Test
+    void playerAddRemovesOnlyDefaultExample() {
+        addExamplePlayer();
+        plugin.getPlayerConfigs().put("Alex", new PlayerBaseConfig(List.of()));
+
+        console("player", "add", "Steve");
+
+        assertEquals(Set.of("Alex", "Steve"), plugin.getPlayerConfigs().keySet());
+    }
+
+    @Test
+    void locAddRemovesDefaultExampleWhenCreatingPlayer() {
+        addExamplePlayer();
+
+        console("loc", "add", "Steve", "1", "1", "2", "3");
+
+        assertEquals(Set.of("Steve"), plugin.getPlayerConfigs().keySet());
+    }
+
+    @Test
+    void locSetRemovesDefaultExampleWhenCreatingPlayer() {
+        addExamplePlayer();
+
+        console("loc", "set", "Steve", "1", "1", "2", "3");
+
+        assertEquals(Set.of("Steve"), plugin.getPlayerConfigs().keySet());
     }
 
     @Test

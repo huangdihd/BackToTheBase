@@ -1,75 +1,75 @@
 # BackToTheBase
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+[简体中文](README.md) | [English](README_EN.md)
 
-A Xinbot plugin that presses a configured ender pearl button for a player and optionally returns the bot to a base location.
+一个 Xinbot 插件，可以根据玩家配置按下指定的珍珠超传按钮，并可选择让机器人返回基地坐标。
 
-## Features
+## 功能
 
-- Supports multiple button locations per player
-- `back` uses location `1`; `back <number>` uses a selected location
-- Automatically detects button facing direction and finds a reachable standing position.
-- Optional global return location
-- Console management commands with tab completion
+- 支持每个玩家配置多个珍珠按钮坐标
+- `back` 默认使用 `1` 号坐标，`back <number>` 使用指定编号
+- 自动检测按钮朝向并自动寻找可到达的安全站位
+- 支持全局返回坐标
+- 支持控制台管理命令和 Tab 补全
 
-## Installation
+## 安装
 
-1. Install [MovementSync](https://github.com/huangdihd/MovementSync).
-2. Put the BackToTheBase JAR in the Xinbot `plugins` folder.
-3. Start Xinbot once to generate `base_config.json`.
-4. Edit `base_config.json`.
-5. Reload or restart Xinbot.
+1. 安装前置插件 [MovementSync 1.11.0-RELEASE](https://github.com/huangdihd/MovementSync/releases/tag/1.11.0-RELEASE)。本 SNAPSHOT 针对此版本适配，不支持旧版 MovementSync。
+2. 将 BackToTheBase JAR 放入 Xinbot 的 `plugins` 文件夹。
+3. 启动一次 Xinbot，生成 `base_config.json`。
+4. 编辑 `base_config.json`。
+5. 重载或重启 Xinbot。
 
-## Player Commands
+## 玩家命令
 
-Send these as private messages (/msg account_name) to the bot:
+玩家向机器人发送私聊消息(/msg 珍珠号)：
 
-| Command | Description |
+| 命令 | 说明 |
 | --- | --- |
-| `back` | Uses location `1`. |
-| `back <number>` | Uses the matching configured location number. |
+| `back` | 使用 `1` 号珍珠坐标。 |
+| `back <number>` | 使用对应编号的珍珠坐标。 |
 
-Example:
+示例：
 
 ```text
-/msg account_name back
-/msg account_name back 2
+/msg 珍珠号 back
+/msg 珍珠号 back 2
 ```
 
-## Console Commands
+## 控制台命令
 
-Use the command name `backtothebase` or the short alias `bttb`. The prefixed form `BackToTheBase:backtothebase` and `BackToTheBase:bttb` also works.
+命令名可以使用 `backtothebase` 或简短版 `bttb`, 也可以使用带前缀的 `BackToTheBase:backtothebase` 或者 `BackToTheBase:bttb`。
 
-| Command | Description |
+| 所有命令 | 说明 |
 | --- | --- |
-| `backtothebase stat` | Show plugin status. |
-| `backtothebase player list` | List players. |
-| `backtothebase player add <player>` | Add a player. |
-| `backtothebase player remove <player>` | Ask to remove a player. Requires `confirm`. |
-| `backtothebase loc list <player>` | List a player's locations. |
-| `backtothebase loc add <player> <number> <x> <y> <z>` | Add a button location. |
-| `backtothebase loc set <player> <number> <x> <y> <z>` | Set or replace a button location. |
-| `backtothebase loc remove <player> <number>` | Ask to remove a location. Requires `confirm`. |
-| `backtothebase returnenable true\|false` | Enable or disable returning after clicking. |
-| `backtothebase returnpoint <x> <y> <z>` | Set the return location. |
-| `backtothebase admin add\|remove <player>` | Manage in-game admins. |
-| `backtothebase adminenable true\|false` | Enable or disable in-game admin commands. |
-| `backtothebase confirm` | Confirm a pending remove action. |
+| `backtothebase stat` | 查看插件状态。 |
+| `backtothebase player list` | 查看玩家列表。 |
+| `backtothebase player add <player>` | 添加玩家。 |
+| `backtothebase player remove <player>` | 请求删除玩家，需要 `confirm` 确认。 |
+| `backtothebase loc list <player>` | 查看玩家的珍珠坐标。 |
+| `backtothebase loc add <player> <number> <x> <y> <z>` | 添加珍珠坐标。 |
+| `backtothebase loc set <player> <number> <x> <y> <z>` | 设置或覆盖珍珠坐标。 |
+| `backtothebase loc remove <player> <number>` | 请求删除珍珠坐标，需要 `confirm` 确认。 |
+| `backtothebase returnenable true\|false` | 开启或关闭点击后的返回功能。 |
+| `backtothebase returnpoint <x> <y> <z>` | 设置返回坐标。 |
+| `backtothebase admin add\|remove <player>` | 管理游戏内管理员。 |
+| `backtothebase adminenable true\|false` | 开启或关闭游戏内管理命令。 |
+| `backtothebase confirm` | 确认待执行的删除操作。 |
 
-## In-game Admin Commands
+## 游戏内管理命令
 
-When enabled, admins can private message the bot with:
+开启后，管理员可以向机器人发送私聊消息：
 
 ```text
-/msg account_name @backtothebase <command>
-/msg account_name @bttb <command>
+/msg 珍珠号 @backtothebase <command>
+/msg 珍珠号 @bttb <command>
 ```
 
-**Most console commands are supported, except admin management commands such as `admin` and `adminenable`.**
+**大部分控制台命令都支持，但不支持 `admin` 和 `adminenable` 等管理员设置命令。**
 
-## Configuration
+## 配置文件
 
-Example `base_config.json`:
+`base_config.json` 示例：
 
 ```json
 {
@@ -106,18 +106,18 @@ Example `base_config.json`:
 }
 ```
 
-Notes:
+说明：
 
-- Command output is rendered through Xinbot `LangManager`. The language follows the host system locale (a Chinese locale loads `lang/zh_cn.lang`; everything else falls back to `lang/en_us.lang`).
-- `players` maps player names to their button locations.
-- `locations[].number` must be a positive integer string.
-- `x`, `y`, and `z` are the exact block coordinates of the button.
-- `return.enabled` controls whether the bot walks back after clicking.
-- `admin.enabled` controls in-game `@backtothebase` / `@bttb` management commands.
+- 命令输出通过 Xinbot `LangManager` 渲染，语言跟随主机系统区域设置（中文区域加载 `lang/zh_cn.lang`，其余回退到 `lang/en_us.lang`）。
+- `players` 是玩家名到珍珠按钮坐标的映射。
+- `locations[].number` 必须是正整数形式的字符串。
+- `x`、`y`、`z` 是按钮方块本身的精确坐标。
+- `return.enabled` 控制点击后是否返回。
+- `admin.enabled` 控制游戏内 `@backtothebase` / `@bttb` 管理命令是否启用。
 
-## Legacy Config
+## 旧版配置兼容
 
-Old simple configs are still supported:
+旧版简单配置仍然支持：
 
 ```json
 {
@@ -129,15 +129,16 @@ Old simple configs are still supported:
 }
 ```
 
-They will automatically migrate to the new `players.locations` format.
+插件会自动将其迁移到新的 `players.locations` 格式。
 
-## Build
+## 构建
 
 ```bash
 mvn clean package
 ```
 
-## Implementation Notes
+## 更多说明
 
-- When a BackToTheBase action times out, the plugin calls MovementSync `cancelAll()` to release stale movement state. This may cancel other queued MovementSync movements because MovementSync does not currently provide a plugin-scoped cancel API.
-- UseItemOnMovement sends a rotation packet before UseItemOnPacket so the server-side interaction is aimed at the button hit position. The click is delayed to a later movement tick to avoid sending rotation and interaction in the same tick.
+- MovementSync 正在移动、跟随或暂停时，`back` 会提示忙碌，请在其空闲后重试。
+- 每次 `back` 独立跟踪自己的动作。再次执行命令发现上次任务超过 30 秒时，会使旧任务失效，保留其他排队中的移动；插件禁用或卸载时也会使自己的未完成动作失效。
+- UseItemOnMovement 会先发送旋转包，再发送 UseItemOnPacket，这样服务端交互会瞄准按钮点击位置。点击会延迟到后续 movement tick 执行，避免旋转和交互在同一 tick 内发送。

@@ -42,6 +42,8 @@ public class BackToTheBase implements Plugin {
     public static final String GAME_COMMAND_PREFIX = "@" + COMMAND_NAME;
     public static final String GAME_COMMAND_ALIAS_PREFIX = "@" + COMMAND_ALIAS;
     private static final int MAX_ADMINS = 3;
+    private static final String EXAMPLE_PLAYER_NAME = "example_name";
+    static final String CURRENT_VERSION = "1.9.0-SNAPSHOT";
     private static final long PENDING_ACTION_TIMEOUT_MS = 60_000L;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final Map<String, PendingAction> pendingActions = new ConcurrentHashMap<>();
@@ -49,6 +51,13 @@ public class BackToTheBase implements Plugin {
     public Map<String, PlayerBaseConfig> getPlayerConfigs() {
         return baseConfig.getPlayers();
     }
+
+    private void removeExamplePlayer(String playerName) {
+        if (!EXAMPLE_PLAYER_NAME.equals(playerName)) {
+            getPlayerConfigs().remove(EXAMPLE_PLAYER_NAME);
+        }
+    }
+
 
     @Override
     public void onLoad() {
@@ -80,7 +89,7 @@ public class BackToTheBase implements Plugin {
 
     @Override
     public void onUnload() {
-
+        OnPrivateChat.cancelActiveAction();
     }
 
     @Override
@@ -91,17 +100,18 @@ public class BackToTheBase implements Plugin {
                 new BackToTheBaseCommand(),
                 this
         );
+        new UpdateChecker(getLogger(), CURRENT_VERSION).startAsync();
     }
 
     @Override
     public void onDisable() {
-
+        OnPrivateChat.cancelActiveAction();
     }
 
     private void writeDefaultConfig(File configFile) throws IOException {
         PlayerBaseConfig.BaseConfig defaultConfig = new PlayerBaseConfig.BaseConfig();
         Map<String, PlayerBaseConfig> players = new LinkedHashMap<>();
-        players.put("example_name", new PlayerBaseConfig(List.of(new ButtonLocation(
+        players.put(EXAMPLE_PLAYER_NAME, new PlayerBaseConfig(List.of(new ButtonLocation(
                 "1",
                 PlayerBaseConfig.DEFAULT_RETURN_X,
                 PlayerBaseConfig.DEFAULT_RETURN_Y,
@@ -244,7 +254,7 @@ public class BackToTheBase implements Plugin {
                 int z = getInt(playerObj, "z");
 
                 getLogger().warn("Migrating old simple config format for {}", playerName);
-                players.put(playerName, new PlayerBaseConfig(List.of(new ButtonLocation("1", x, y, z))));
+                players.put(playerName, new PlayerBaseConfig(new ArrayList<>(List.of(new ButtonLocation("1", x, y, z)))));
                 changed = true;
 
                 ReturnConfigResult legacyReturnResult = parseLegacySimpleReturnConfig(
@@ -581,8 +591,11 @@ public class BackToTheBase implements Plugin {
             return null;
         }
         try {
-            return obj.get(key).getAsInt();
-        } catch (NumberFormatException | UnsupportedOperationException | IllegalStateException e) {
+            JsonPrimitive primitive = obj.getAsJsonPrimitive(key);
+            return primitive.isNumber()
+                    ? primitive.getAsBigDecimal().intValueExact()
+                    : Integer.parseInt(primitive.getAsString());
+        } catch (NumberFormatException | ArithmeticException | UnsupportedOperationException | IllegalStateException e) {
             return null;
         }
     }
@@ -714,6 +727,7 @@ public class BackToTheBase implements Plugin {
                 return List.of(LangManager.get("backtothebase.player.exists", playerName));
             }
             getPlayerConfigs().put(playerName, new PlayerBaseConfig(new ArrayList<>()));
+            removeExamplePlayer(playerName);
             if (!saveCurrentConfig()) {
                 return saveFailedMessage();
             }
@@ -773,6 +787,7 @@ public class BackToTheBase implements Plugin {
             config = new PlayerBaseConfig(new ArrayList<>());
             getPlayerConfigs().put(playerName, config);
             createdPlayer = true;
+            removeExamplePlayer(playerName);
         }
         if ("add".equalsIgnoreCase(args[1]) && config.getLocation(number) != null) {
             return List.of(LangManager.get("backtothebase.location.exists", number));
