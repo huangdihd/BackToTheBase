@@ -112,6 +112,18 @@ class UpdateCheckerTest {
         );
     }
 
+    @Test
+    void releaseOfSameVersionIsNewerThanSnapshot() {
+        assertTrue(UpdateChecker.isNewer("1.9.0-RELEASE", "1.9.0-SNAPSHOT"));
+        assertTrue(UpdateChecker.isNewer("v1.9.0", "1.9.0-SNAPSHOT"));
+        assertFalse(UpdateChecker.isNewer("1.9.0-SNAPSHOT", "1.9.0-RELEASE"));
+        assertFalse(UpdateChecker.isNewer("1.9.0-SNAPSHOT", "1.9.0-SNAPSHOT"));
+        assertFalse(UpdateChecker.isNewer("1.9.0-BETA", "1.9.0-SNAPSHOT"));
+        assertFalse(UpdateChecker.isNewer("1.9.0", "1.9.0-RELEASE"));
+        assertFalse(UpdateChecker.isNewer("1.8.9-RELEASE", "1.9.0-SNAPSHOT"));
+        assertTrue(UpdateChecker.isNewer("1.10.0-RELEASE", "1.9.0-SNAPSHOT"));
+    }
+
     private URI endpoint(String path) {
         return URI.create("http://127.0.0.1:" + server.getAddress().getPort() + path);
     }

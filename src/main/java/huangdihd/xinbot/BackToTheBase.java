@@ -254,7 +254,7 @@ public class BackToTheBase implements Plugin {
                 int z = getInt(playerObj, "z");
 
                 getLogger().warn("Migrating old simple config format for {}", playerName);
-                players.put(playerName, new PlayerBaseConfig(List.of(new ButtonLocation("1", x, y, z))));
+                players.put(playerName, new PlayerBaseConfig(new ArrayList<>(List.of(new ButtonLocation("1", x, y, z)))));
                 changed = true;
 
                 ReturnConfigResult legacyReturnResult = parseLegacySimpleReturnConfig(
@@ -591,8 +591,11 @@ public class BackToTheBase implements Plugin {
             return null;
         }
         try {
-            return obj.get(key).getAsInt();
-        } catch (NumberFormatException | UnsupportedOperationException | IllegalStateException e) {
+            JsonPrimitive primitive = obj.getAsJsonPrimitive(key);
+            return primitive.isNumber()
+                    ? primitive.getAsBigDecimal().intValueExact()
+                    : Integer.parseInt(primitive.getAsString());
+        } catch (NumberFormatException | ArithmeticException | UnsupportedOperationException | IllegalStateException e) {
             return null;
         }
     }

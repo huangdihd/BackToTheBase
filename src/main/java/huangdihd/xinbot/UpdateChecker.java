@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -137,7 +138,8 @@ final class UpdateChecker {
                 return latest[i] > current[i];
             }
         }
-        return false;
+        return currentVersion.trim().toUpperCase(Locale.ROOT).endsWith("-SNAPSHOT")
+                && latestVersion.trim().matches("(?i)v?\\d+\\.\\d+\\.\\d+(?:-RELEASE)?");
     }
 
     private static int[] semanticVersion(String version) {
